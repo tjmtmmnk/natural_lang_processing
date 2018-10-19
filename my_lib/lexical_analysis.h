@@ -1,9 +1,9 @@
 #ifndef NATURAL_LANG_PROCESS_LEXICAL_ANALYSIS_H
 #define NATURAL_LANG_PROCESS_LEXICAL_ANALYSIS_H
 
-void setFileName(char *_file_name);
+#define MAX_WORD_LENGTH 1000
 void initScan();
-void openFile();
+void setFileName(char *_file_name);
 void closeFile();
 
 // @return : 次のトークンコード

@@ -8,7 +8,7 @@
 #define MAX_STR_SIZE 1024
 #define NUM_OF_TOKEN 49
 #define KEY_WORD_SIZE 28
-
+#define NUM_OF_SPLIT 10
 /* Token */
 typedef enum e_name {
     TNAME = 1
@@ -79,48 +79,12 @@ extern struct KEY {
     int token_number;
 } key[KEY_WORD_SIZE];
 
-int token_counter[NUM_OF_TOKEN + 1];
+extern char *split[NUM_OF_SPLIT];
 
-struct KEY key[KEY_WORD_SIZE] = {
-        {"and",       TAND},
-        {"array",     TARRAY},
-        {"begin",     TBEGIN},
-        {"boolean",   TBOOLEAN},
-        {"break",     TBREAK},
-        {"call",      TCALL},
-        {"char",      TCHAR},
-        {"div",       TDIV},
-        {"do",        TDO},
-        {"else",      TELSE},
-        {"end",       TEND},
-        {"false",     TFALSE},
-        {"if",        TIF},
-        {"integer",   TINTEGER},
-        {"not",       TNOT},
-        {"of",        TOF},
-        {"or",        TOR},
-        {"procedure", TPROCEDURE},
-        {"program",   TPROGRAM},
-        {"read",      TREAD},
-        {"readln",    TREADLN},
-        {"return",    TRETURN},
-        {"then",      TTHEN},
-        {"true",      TTRUE},
-        {"var",       TVAR},
-        {"while",     TWHILE},
-        {"write",     TWRITE},
-        {"writeln",   TWRITELN}
-};
+extern int token_counter[NUM_OF_TOKEN + 1];
 
 /* string of each token */
-char *token_str[NUM_OF_TOKEN + 1] = {
-        "",
-        "NAME", "program", "var", "array", "of", "begin", "end", "if", "then",
-        "else", "procedure", "return", "call", "while", "do", "not", "or", "div", "and", "char", "integer", "boolean",
-        "readln", "writeln", "true",
-        "false", "NUMBER", "STRING", "+", "-", "*", "=", "<>", "<", "<=", ">", ">=", "(", ")", "[", "]", ":=", ".", ",",
-        ":", ";", "read", "write", "break"
-};
+extern char* token_str[NUM_OF_TOKEN + 1];
 
 
 #endif //NATURAL_LANG_PROCESS_TOKEN_LIST_H
