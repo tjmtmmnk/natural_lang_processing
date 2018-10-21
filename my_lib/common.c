@@ -1,6 +1,9 @@
 #include "common.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void error(char *mes) {
-    fprintf(stderr, "¥n ERROR: %s¥n", mes);
+    fprintf(stderr, "ERROR: %s", mes);
+    fflush(stderr);
+    exit(1);
 }

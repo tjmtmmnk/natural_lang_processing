@@ -57,6 +57,10 @@ static int isSymbol(char c) {
     }
 }
 
+static int isString(char c) {
+    return c == '\'';
+}
+
 //連続するシンボルの判定
 static int isContSymbol(char c[2]) {
     for (int i = 0; i < NUM_OF_CONT_SYMBOL; ++i) {
@@ -103,6 +107,11 @@ void setFileName(char *_file_name) {
     file_name = _file_name;
 }
 
+static void updateBuf() {
+    crnt_buf = c_buf;
+    c_buf = fgetc(fp);
+}
+
 void initScan() {
     openFile();
     c_buf = fgetc(fp);
@@ -117,147 +126,87 @@ void closeFile() {
 
 // @return : トークンコード, 失敗したら-1
 int scanTokenOneEach() {
-    int token_code = -1;
+    Mode mode = MODE_NONE;
     int buf_i = 0;
-    int has_spilit = 0;
-
-    while (!has_spilit && crnt_buf != EOF) {
-        switch (c_buf) {
-            case ' ':
-            case '\t':
-                if (!isSplit(crnt_buf)) {
-                    str_attr[buf_i] = crnt_buf;
-                    has_spilit = 1;
-                }
-                c_buf = fgetc(fp);
-                crnt_buf = c_buf;
-                c_buf = fgetc(fp);
-                break;
-            case '\r': {
-                if (!isSplit(crnt_buf)) {
-                    str_attr[buf_i] = crnt_buf;
-                    char next = fgetc(fp);
-
-                    if (next == '\n') {
-                        crnt_buf = fgetc(fp);
-                        c_buf = fgetc(fp);
-                    } else if (next != EOF) {
-                        c_buf = fgetc(fp);
-                        crnt_buf = next;
-                    } else {
-                        return SCAN_END;
-                    }
-                    has_spilit = 1;
-                    break;
-                } else {
-                    crnt_buf = c_buf;
-                    c_buf = fgetc(fp);
-                    break;
-                }
+    /* 初めの1字で分岐
+     * 各モードでそれぞれ処理する
+     */
+    while (crnt_buf != EOF || c_buf != EOF) {
+        if (isAlphabet(crnt_buf)) {
+            mode = MODE_ALPHA_NUM;
+        } else if (isDigit(crnt_buf)) {
+            mode = MODE_NUM;
+        } else if (isSplit(crnt_buf)) {
+            mode = MODE_SPLIT;
+        } else if (isSymbol(crnt_buf) && isSymbol(c_buf)) {
+            char temp[2];
+            temp[0] = crnt_buf;
+            temp[1] = c_buf;
+            if (isContSymbol(temp)) {
+                mode = MODE_CONT_SYMBOL;
             }
-            case '\n': {
-                if (!isSplit(crnt_buf)) {
-                    str_attr[buf_i] = crnt_buf;
-                    printf("%c\n", crnt_buf);
-                    char next = fgetc(fp);
-
-                    if (next == '\r') {
-                        crnt_buf = fgetc(fp);
-                        c_buf = fgetc(fp);
-                    } else if (next != EOF) {
-                        c_buf = fgetc(fp);
-                        crnt_buf = next;
-                    } else {
-                        return SCAN_END;
-                    }
-                    has_spilit = 1;
-                    break;
-                } else {
-                    crnt_buf = c_buf;
-                    c_buf = fgetc(fp);
-                    break;
-                }
-            }
-            case '{': {
-                char next;
-                while ((next = fgetc(fp)) != '}');
-                c_buf = fgetc(fp);
-                has_spilit = 1;
-                break;
-            }
-            case '\'': {
-                char next;
-                while ((next = fgetc(fp)) != '\'');
-                crnt_buf = fgetc(fp);
-                c_buf = fgetc(fp);
-                token_code = TSTRING;
-                has_spilit = 1;
-                break;
-            }
-            case '/': {
-                printf("a");
-                char next = fgetc(fp);
-                if (next == '*') {
-                    char temp;
-                    while ((temp = fgetc(fp)) != '/');
-                    crnt_buf = fgetc(fp);
-                    c_buf = fgetc(fp);
-                }
-                break;
-            }
-            default:
-                if (c_buf == EOF) {
-                    return SCAN_END;
-                } else if (isAlphabet(crnt_buf)) {
-                    if (isAlphabet(c_buf) || isDigit(c_buf) || isSymbol(c_buf)) {
-                        str_attr[buf_i++] = crnt_buf;
-                        if (isSymbol(c_buf)) {
-                            has_spilit = 1;
-                        }
-                    } else {
-                        if (buf_i > MAX_WORD_LENGTH) {
-                            error("Over words length range(1~1000)");
-                        }
-                        has_spilit = 1;
-                    }
-                } else if (isDigit(crnt_buf)) {
-                    if (isDigit(c_buf)) {
-                        str_attr[buf_i++] = crnt_buf;
-                    } else {
-                        sscanf(str_attr, "%d", &num_attr);
-                        if (num_attr > UNSIGNED_INT_MAX) {
-                            error("Over num range(0~32767)");
-                        }
-                        has_spilit = 1;
-                    }
-                } else if (isSymbol(crnt_buf) && isSymbol(c_buf)) {
-                    str_attr[0] = crnt_buf;
-                    str_attr[1] = c_buf;
-                    if (isContSymbol(str_attr)) {
-                        crnt_buf = fgetc(fp);
-                        c_buf = fgetc(fp);
-                        has_spilit = 1;
-                        break;
-                    }
-                } else if (isSymbol(crnt_buf)) {
-                    str_attr[0] = crnt_buf;
-                    str_attr[1] = '\0';
-                    has_spilit = 1;
-                }
-                crnt_buf = c_buf;
-                c_buf = fgetc(fp);
-                break;
+        } else if (isSymbol(crnt_buf)) {
+            mode = MODE_SYMBOL;
+        } else if (isString(crnt_buf)) {
+            mode = MODE_STRING;
+        } else {
+            error("Invalid word");
         }
+
+        switch (mode) {
+            case MODE_SPLIT:
+                updateBuf();
+                return 0;
+
+            case MODE_ALPHA_NUM:
+                while (isAlphabet(crnt_buf) || isDigit(crnt_buf)) {
+                    str_attr[buf_i++] = crnt_buf;
+                    updateBuf();
+                }
+                break;
+
+            case MODE_NUM:
+                while (isDigit(crnt_buf)) {
+                    str_attr[buf_i++] = crnt_buf;
+                    updateBuf();
+                }
+                sscanf(str_attr, "%d", &num_attr);
+                if (num_attr > UNSIGNED_INT_MAX) {
+                    error("Over num range(0~32767)");
+                }
+                break;
+
+            case MODE_SYMBOL:
+                str_attr[buf_i++] = crnt_buf;
+                updateBuf();
+                break;
+
+            case MODE_CONT_SYMBOL:
+                str_attr[buf_i++] = crnt_buf;
+                str_attr[buf_i++] = c_buf;
+                updateBuf();
+                break;
+
+            case MODE_STRING:
+                updateBuf();
+                while (!isString(crnt_buf)) {
+                    updateBuf();
+                }
+                updateBuf();
+                return TSTRING;
+            default:
+                break;
+
+        }
+        if (buf_i == 0) {
+            updateBuf();
+        }
+        printf("%s\n", str_attr);
+        clearBuf();
     }
 
-    if (token_code < 0) {
-        token_code = getTokenCode();
-    }
+    return -1;
 
-    clearBuf();
-
-    return
-            token_code;
 }
 
 int getLatestFoundTokenLine() {

@@ -77,12 +77,15 @@ typedef enum e_symbol {
     TSEMI,
 } eSymbol;
 
-typedef enum Mode{
+typedef enum MODE {
+    MODE_NONE,
     MODE_ALPHA_NUM,
     MODE_NUM,
     MODE_SYMBOL,
-    MODE_SPLIT
-};
+    MODE_CONT_SYMBOL,
+    MODE_SPLIT,
+    MODE_STRING
+} Mode;
 extern const struct KEY {
     char *keyword;
     int token_number;
