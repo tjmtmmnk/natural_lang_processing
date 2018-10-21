@@ -26,6 +26,15 @@ static int isAlphabet(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
+static int isSplit(char c) {
+    for (int i = 0; i < NUM_OF_SPLIT; ++i) {
+        if (c == split[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int isSymbol(char c) {
     switch (c) {
         case '+':
@@ -115,19 +124,19 @@ int scanTokenOneEach() {
     while (!has_spilit && crnt_buf != EOF) {
         switch (c_buf) {
             case ' ':
-                str_attr[buf_i] = crnt_buf;
+                if (!isSplit(crnt_buf)) {
+                    str_attr[buf_i] = crnt_buf;
+                    has_spilit = 1;
+                }
                 c_buf = fgetc(fp);
                 crnt_buf = c_buf;
                 c_buf = fgetc(fp);
-                if (crnt_buf != ' ') {
-                    has_spilit = 1;
-                }
                 break;
             case '\t':
                 has_spilit = 1;
                 break;
             case '\r': {
-                if (crnt_buf != '\n') {
+                if (!isSplit(crnt_buf)) {
                     str_attr[buf_i] = crnt_buf;
                     char next = fgetc(fp);
 
@@ -149,7 +158,7 @@ int scanTokenOneEach() {
                 }
             }
             case '\n': {
-                if (crnt_buf != '\r') {
+                if (!isSplit(crnt_buf)) {
                     str_attr[buf_i] = crnt_buf;
                     printf("%c\n", crnt_buf);
                     char next = fgetc(fp);
@@ -248,7 +257,8 @@ int scanTokenOneEach() {
 
     clearBuf();
 
-    return token_code;
+    return
+            token_code;
 }
 
 int getLatestFoundTokenLine() {

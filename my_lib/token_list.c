@@ -53,8 +53,10 @@ const struct SYMBOL symbol[NUM_OF_SYMBOL] = {
 };
 
 const char cont_sym[NUM_OF_CONT_SYMBOL][3] = {
-        "<>","<=",">=",":="
+        "<>", "<=", ">=", ":="
 };
+
+const char split[NUM_OF_SPLIT] = {' ', '\t', '\n', '\r'};
 
 char *token_str[NUM_OF_TOKEN + 1] = {
         "",

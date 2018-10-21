@@ -15,8 +15,9 @@ int main(int nc, char *np[]) {
 
     int token_code;
     while ((token_code = scanTokenOneEach()) != SCAN_END) {
-//        printf("%d\n", token_code);
+        printf("%d\n", token_code);
     }
+    closeFile();
 
     return EXIT_SUCCESS;
 }
