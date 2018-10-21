@@ -19,11 +19,11 @@ static void openFile() {
 }
 
 static int isDigit(char c) {
-    return c_buf >= '0' && c_buf <= '9';
+    return c >= '0' && c <= '9';
 }
 
 static int isAlphabet(char c) {
-    return (c_buf >= 'a' && c_buf <= 'z') || (c_buf >= 'A' && c_buf <= 'Z');
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 static int isSymbol(char c) {
@@ -101,24 +101,33 @@ int scanTokenOneEach() {
     int buf_i = 0;
     int has_spilit = 0;
 
-    while (!has_spilit) {
-//        printf("%c\t%c\n",crnt_buf,c_buf);
+    while (!has_spilit && crnt_buf != EOF) {
         switch (c_buf) {
             case ' ':
-            case '\t':
                 str_attr[buf_i] = crnt_buf;
                 c_buf = fgetc(fp);
                 crnt_buf = c_buf;
                 c_buf = fgetc(fp);
+                if (crnt_buf != ' ') {
+                    has_spilit = 1;
+                }
+//                printf("crnt : %c\tc : %c\n", crnt_buf, c_buf);
+                break;
+            case '\t':
                 has_spilit = 1;
                 break;
             case '\r': {
                 str_attr[buf_i] = crnt_buf;
                 char next = fgetc(fp);
-                crnt_buf = c_buf;
-                c_buf = next;
+
                 if (next == '\n') {
+                    crnt_buf = fgetc(fp);
                     c_buf = fgetc(fp);
+                } else if (next != EOF) {
+                    c_buf = fgetc(fp);
+                    crnt_buf = next;
+                } else {
+                    return SCAN_END;
                 }
                 has_spilit = 1;
                 break;
@@ -126,10 +135,15 @@ int scanTokenOneEach() {
             case '\n': {
                 str_attr[buf_i] = crnt_buf;
                 char next = fgetc(fp);
-                crnt_buf = c_buf;
-                c_buf = next;
+
                 if (next == '\r') {
+                    crnt_buf = fgetc(fp);
                     c_buf = fgetc(fp);
+                } else if (next != EOF) {
+                    c_buf = fgetc(fp);
+                    crnt_buf = next;
+                } else {
+                    return SCAN_END;
                 }
                 has_spilit = 1;
                 break;
@@ -144,17 +158,20 @@ int scanTokenOneEach() {
             case '\'': {
                 char next;
                 while ((next = fgetc(fp)) != '\'');
+                crnt_buf = fgetc(fp);
                 c_buf = fgetc(fp);
+                token_code = TSTRING;
                 has_spilit = 1;
                 break;
             }
             case '/': {
                 char next = fgetc(fp);
                 if (next == '*') {
-                    while ((next = fgetc(fp)) != '/');
+                    char temp;
+                    while ((temp = fgetc(fp)) != '/');
+                    crnt_buf = fgetc(fp);
                     c_buf = fgetc(fp);
                 }
-                has_spilit = 1;
                 break;
             }
             default:
@@ -167,7 +184,6 @@ int scanTokenOneEach() {
                         }
                         has_spilit = 1;
                     } else {
-//                        printf("%d\t%c\n", buf_i, crnt_buf);
                         str_attr[buf_i++] = crnt_buf;
                     }
                 } else if (isDigit(crnt_buf)) {
@@ -193,7 +209,9 @@ int scanTokenOneEach() {
                 break;
         }
     }
-    token_code = getTokenCode();
+    if (token_code < 0) {
+        token_code = getTokenCode();
+    }
     clearBuf();
     return token_code;
 }
