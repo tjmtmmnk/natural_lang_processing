@@ -86,6 +86,9 @@ void setFileName(char *_file_name) {
 void initScan() {
     openFile();
     c_buf = fgetc(fp);
+    clearBuf();
+    crnt_buf = c_buf;
+    c_buf = fgetc(fp);
 }
 
 void closeFile() {
@@ -97,44 +100,52 @@ int scanTokenOneEach() {
     int token_code = -1;
     int buf_i = 0;
     int has_spilit = 0;
-    crnt_buf = c_buf;
-    c_buf = fgetc(fp);
 
     while (!has_spilit) {
+//        printf("%c\t%c\n",crnt_buf,c_buf);
         switch (c_buf) {
             case ' ':
             case '\t':
+                str_attr[buf_i] = crnt_buf;
+                c_buf = fgetc(fp);
                 crnt_buf = c_buf;
                 c_buf = fgetc(fp);
+                has_spilit = 1;
                 break;
             case '\r': {
+                str_attr[buf_i] = crnt_buf;
                 char next = fgetc(fp);
                 crnt_buf = c_buf;
                 c_buf = next;
                 if (next == '\n') {
                     c_buf = fgetc(fp);
                 }
+                has_spilit = 1;
                 break;
             }
             case '\n': {
+                str_attr[buf_i] = crnt_buf;
                 char next = fgetc(fp);
                 crnt_buf = c_buf;
                 c_buf = next;
                 if (next == '\r') {
                     c_buf = fgetc(fp);
                 }
+                has_spilit = 1;
                 break;
             }
             case '{': {
                 char next;
                 while ((next = fgetc(fp)) != '}');
                 c_buf = fgetc(fp);
+                has_spilit = 1;
                 break;
             }
             case '\'': {
                 char next;
                 while ((next = fgetc(fp)) != '\'');
                 c_buf = fgetc(fp);
+                has_spilit = 1;
                 break;
             }
             case '/': {
@@ -143,10 +154,10 @@ int scanTokenOneEach() {
                     while ((next = fgetc(fp)) != '/');
                     c_buf = fgetc(fp);
                 }
+                has_spilit = 1;
                 break;
             }
             default:
-                printf("crnt : %c\tc : %c\n", crnt_buf, c_buf);
                 if (c_buf == EOF) {
                     return SCAN_END;
                 } else if (isAlphabet(crnt_buf)) {
@@ -156,6 +167,7 @@ int scanTokenOneEach() {
                         }
                         has_spilit = 1;
                     } else {
+//                        printf("%d\t%c\n", buf_i, crnt_buf);
                         str_attr[buf_i++] = crnt_buf;
                     }
                 } else if (isDigit(crnt_buf)) {
@@ -183,7 +195,6 @@ int scanTokenOneEach() {
     }
     token_code = getTokenCode();
     clearBuf();
-
     return token_code;
 }
 
