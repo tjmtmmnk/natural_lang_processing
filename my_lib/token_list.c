@@ -1,10 +1,6 @@
 #include "token_list.h"
 
-char *split[NUM_OF_SPLIT] = {
-        " ", "\t", "\r", "\n", "\r\n", "\n\r", "{", "}", "/*", "*/"
-};
-
-struct KEY key[KEY_WORD_SIZE] = {
+struct KEY key[NUM_OF_KEY] = {
         {"and",       TAND},
         {"array",     TARRAY},
         {"begin",     TBEGIN},
@@ -33,6 +29,27 @@ struct KEY key[KEY_WORD_SIZE] = {
         {"while",     TWHILE},
         {"write",     TWRITE},
         {"writeln",   TWRITELN}
+};
+
+struct SYMBOL symbol[NUM_OF_SYMBOL] = {
+        {"+",  TPLUS},
+        {"-",  TMINUS},
+        {"*",  TSTAR},
+        {"=",  TEQUAL},
+        {"<>", TNOTEQ},
+        {"<",  TLE},
+        {"<=", TLEEQ},
+        {">",  TGR},
+        {">=", TGREQ},
+        {"(",  TLPAREN},
+        {")",  TRPAREN},
+        {"[",  TLSQPAREN},
+        {"]",  TRSQPAREN},
+        {":=", TASSIGN},
+        {".",  TDOT},
+        {",",  TCOMMA},
+        {":",  TCOLON},
+        {";",  TSEMI}
 };
 
 char *token_str[NUM_OF_TOKEN + 1] = {

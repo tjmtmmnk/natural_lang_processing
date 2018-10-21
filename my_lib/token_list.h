@@ -7,7 +7,8 @@
 
 #define MAX_STR_SIZE 1024
 #define NUM_OF_TOKEN 49
-#define KEY_WORD_SIZE 28
+#define NUM_OF_SYMBOL 18
+#define NUM_OF_KEY 28
 #define NUM_OF_SPLIT 10
 /* Token */
 typedef enum e_name {
@@ -77,14 +78,17 @@ typedef enum e_symbol {
 extern struct KEY {
     char *keyword;
     int token_number;
-} key[KEY_WORD_SIZE];
+} key[NUM_OF_KEY];
 
-extern char *split[NUM_OF_SPLIT];
+extern struct SYMBOL {
+    char *symbol;
+    int token_number;
+} symbol[NUM_OF_SYMBOL];
 
 extern int token_counter[NUM_OF_TOKEN + 1];
 
 /* string of each token */
-extern char* token_str[NUM_OF_TOKEN + 1];
+extern char *token_str[NUM_OF_TOKEN + 1];
 
 
 #endif //NATURAL_LANG_PROCESS_TOKEN_LIST_H

@@ -1,0 +1,6 @@
+#ifndef NATURAL_LANG_PROCESS_COMMON_H
+#define NATURAL_LANG_PROCESS_COMMON_H
+
+void error(char *mes);
+
+#endif //NATURAL_LANG_PROCESS_COMMON_H

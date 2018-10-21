@@ -13,7 +13,10 @@ int main(int nc, char *np[]) {
     setFileName(np[1]);
     initScan();
 
-    scanTokenOneEach();
+    int token_code;
+    while ((token_code = scanTokenOneEach()) != SCAN_END) {
+        printf("%d\n", token_code);
+    }
 
     return EXIT_SUCCESS;
 }
