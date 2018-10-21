@@ -48,6 +48,16 @@ static int isSymbol(char c) {
     }
 }
 
+//連続するシンボルの判定
+static int isContSymbol(char c[2]) {
+    for (int i = 0; i < NUM_OF_CONT_SYMBOL; ++i) {
+        if (strcmp(cont_sym[i], c) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* @input : 数字 or キーワード or シンボル or 名前
  * ここでは例外的な入力は認めない
  */
@@ -111,7 +121,6 @@ int scanTokenOneEach() {
                 if (crnt_buf != ' ') {
                     has_spilit = 1;
                 }
-//                printf("crnt : %c\tc : %c\n", crnt_buf, c_buf);
                 break;
             case '\t':
                 has_spilit = 1;
@@ -178,30 +187,36 @@ int scanTokenOneEach() {
                 if (c_buf == EOF) {
                     return SCAN_END;
                 } else if (isAlphabet(crnt_buf)) {
-                    if (isDigit(c_buf)) {
+                    if (isAlphabet(c_buf) || isDigit(c_buf)) {
+                        str_attr[buf_i++] = crnt_buf;
+                    } else {
                         if (buf_i > MAX_WORD_LENGTH) {
                             error("Over words length range(1~1000)");
                         }
                         has_spilit = 1;
-                    } else {
-                        str_attr[buf_i++] = crnt_buf;
                     }
                 } else if (isDigit(crnt_buf)) {
-                    if (isAlphabet(c_buf)) {
+                    if (isDigit(c_buf)) {
+                        str_attr[buf_i++] = crnt_buf;
+                    } else {
                         sscanf(str_attr, "%d", &num_attr);
                         if (num_attr > UNSIGNED_INT_MAX) {
                             error("Over num range(0~32767)");
                         }
                         has_spilit = 1;
-                    } else {
-                        str_attr[buf_i++] = crnt_buf;
                     }
                 } else if (isSymbol(crnt_buf) && isSymbol(c_buf)) {
                     str_attr[0] = crnt_buf;
                     str_attr[1] = c_buf;
-                    has_spilit = 1;
+                    if (isContSymbol(str_attr)) {
+                        crnt_buf = fgetc(fp);
+                        c_buf = fgetc(fp);
+                        has_spilit = 1;
+                        break;
+                    }
                 } else if (isSymbol(crnt_buf)) {
                     str_attr[0] = crnt_buf;
+                    str_attr[1] = '\0';
                     has_spilit = 1;
                 }
                 crnt_buf = c_buf;

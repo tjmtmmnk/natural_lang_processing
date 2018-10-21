@@ -1,6 +1,6 @@
 #include "token_list.h"
 
-struct KEY key[NUM_OF_KEY] = {
+const struct KEY key[NUM_OF_KEY] = {
         {"and",       TAND},
         {"array",     TARRAY},
         {"begin",     TBEGIN},
@@ -31,7 +31,7 @@ struct KEY key[NUM_OF_KEY] = {
         {"writeln",   TWRITELN}
 };
 
-struct SYMBOL symbol[NUM_OF_SYMBOL] = {
+const struct SYMBOL symbol[NUM_OF_SYMBOL] = {
         {"+",  TPLUS},
         {"-",  TMINUS},
         {"*",  TSTAR},
@@ -50,6 +50,10 @@ struct SYMBOL symbol[NUM_OF_SYMBOL] = {
         {",",  TCOMMA},
         {":",  TCOLON},
         {";",  TSEMI}
+};
+
+const char cont_sym[NUM_OF_CONT_SYMBOL][3] = {
+        "<>","<=",">=",":="
 };
 
 char *token_str[NUM_OF_TOKEN + 1] = {

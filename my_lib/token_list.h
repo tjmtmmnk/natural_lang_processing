@@ -9,7 +9,8 @@
 #define NUM_OF_TOKEN 49
 #define NUM_OF_SYMBOL 18
 #define NUM_OF_KEY 28
-#define NUM_OF_SPLIT 10
+#define NUM_OF_CONT_SYMBOL 4
+
 /* Token */
 typedef enum e_name {
     TNAME = 1
@@ -75,15 +76,18 @@ typedef enum e_symbol {
     TSEMI,
 } eSymbol;
 
-extern struct KEY {
+extern const struct KEY {
     char *keyword;
     int token_number;
 } key[NUM_OF_KEY];
 
-extern struct SYMBOL {
+extern const struct SYMBOL {
     char *symbol;
     int token_number;
 } symbol[NUM_OF_SYMBOL];
+
+//連続するシンボル
+extern const char cont_sym[NUM_OF_CONT_SYMBOL][3];
 
 extern int token_counter[NUM_OF_TOKEN + 1];
 
