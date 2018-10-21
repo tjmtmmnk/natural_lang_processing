@@ -62,6 +62,7 @@ static int isContSymbol(char c[2]) {
  * ここでは例外的な入力は認めない
  */
 static int getTokenCode() {
+
     printf("%s\n", str_attr);
     if (num_attr > 0) {
         return TNUMBER;
@@ -126,36 +127,49 @@ int scanTokenOneEach() {
                 has_spilit = 1;
                 break;
             case '\r': {
-                str_attr[buf_i] = crnt_buf;
-                char next = fgetc(fp);
+                if (crnt_buf != '\n') {
+                    str_attr[buf_i] = crnt_buf;
+                    char next = fgetc(fp);
 
-                if (next == '\n') {
-                    crnt_buf = fgetc(fp);
-                    c_buf = fgetc(fp);
-                } else if (next != EOF) {
-                    c_buf = fgetc(fp);
-                    crnt_buf = next;
+                    if (next == '\n') {
+                        crnt_buf = fgetc(fp);
+                        c_buf = fgetc(fp);
+                    } else if (next != EOF) {
+                        c_buf = fgetc(fp);
+                        crnt_buf = next;
+                    } else {
+                        return SCAN_END;
+                    }
+                    has_spilit = 1;
+                    break;
                 } else {
-                    return SCAN_END;
+                    crnt_buf = c_buf;
+                    c_buf = fgetc(fp);
+                    break;
                 }
-                has_spilit = 1;
-                break;
             }
             case '\n': {
-                str_attr[buf_i] = crnt_buf;
-                char next = fgetc(fp);
+                if (crnt_buf != '\r') {
+                    str_attr[buf_i] = crnt_buf;
+                    printf("%c\n", crnt_buf);
+                    char next = fgetc(fp);
 
-                if (next == '\r') {
-                    crnt_buf = fgetc(fp);
-                    c_buf = fgetc(fp);
-                } else if (next != EOF) {
-                    c_buf = fgetc(fp);
-                    crnt_buf = next;
+                    if (next == '\r') {
+                        crnt_buf = fgetc(fp);
+                        c_buf = fgetc(fp);
+                    } else if (next != EOF) {
+                        c_buf = fgetc(fp);
+                        crnt_buf = next;
+                    } else {
+                        return SCAN_END;
+                    }
+                    has_spilit = 1;
+                    break;
                 } else {
-                    return SCAN_END;
+                    crnt_buf = c_buf;
+                    c_buf = fgetc(fp);
+                    break;
                 }
-                has_spilit = 1;
-                break;
             }
             case '{': {
                 char next;
@@ -187,8 +201,11 @@ int scanTokenOneEach() {
                 if (c_buf == EOF) {
                     return SCAN_END;
                 } else if (isAlphabet(crnt_buf)) {
-                    if (isAlphabet(c_buf) || isDigit(c_buf)) {
+                    if (isAlphabet(c_buf) || isDigit(c_buf) || isSymbol(c_buf)) {
                         str_attr[buf_i++] = crnt_buf;
+                        if (isSymbol(c_buf)) {
+                            has_spilit = 1;
+                        }
                     } else {
                         if (buf_i > MAX_WORD_LENGTH) {
                             error("Over words length range(1~1000)");
@@ -224,10 +241,13 @@ int scanTokenOneEach() {
                 break;
         }
     }
+
     if (token_code < 0) {
         token_code = getTokenCode();
     }
+
     clearBuf();
+
     return token_code;
 }
 
