@@ -124,6 +124,7 @@ int scanTokenOneEach() {
     while (!has_spilit && crnt_buf != EOF) {
         switch (c_buf) {
             case ' ':
+            case '\t':
                 if (!isSplit(crnt_buf)) {
                     str_attr[buf_i] = crnt_buf;
                     has_spilit = 1;
@@ -131,9 +132,6 @@ int scanTokenOneEach() {
                 c_buf = fgetc(fp);
                 crnt_buf = c_buf;
                 c_buf = fgetc(fp);
-                break;
-            case '\t':
-                has_spilit = 1;
                 break;
             case '\r': {
                 if (!isSplit(crnt_buf)) {
@@ -197,6 +195,7 @@ int scanTokenOneEach() {
                 break;
             }
             case '/': {
+                printf("a");
                 char next = fgetc(fp);
                 if (next == '*') {
                     char temp;
