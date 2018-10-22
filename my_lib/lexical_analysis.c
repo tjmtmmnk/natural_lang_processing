@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include "lexical_analysis.h"
 
+//#define DEBUG_MODE
+
 static FILE *fp;
 static char *file_name;
 static int c_buf;
 static int crnt_buf;
-int num_attr = -1;
+int num_attr = NONE;
 char str_attr[MAX_WORD_LENGTH];
 
 static void openFile() {
@@ -77,8 +79,10 @@ static int isContSymbol(char c[2]) {
  * ここでは例外的な入力は認めない
  */
 static int getTokenCode() {
-//    printf("%s\n", str_attr);
-    if (num_attr > 0) {
+#ifdef DEBUG_MODE
+    printf("%s\n", str_attr);
+#endif
+    if (num_attr >= 0) {
         return TNUMBER;
     }
     rep(i, 0, NUM_OF_KEY) {
@@ -99,7 +103,7 @@ static void clearBuf() {
     rep(i, 0, MAX_WORD_LENGTH) {
         str_attr[i] = '\0';
     }
-    num_attr = 0;
+    num_attr = NONE;
 }
 
 void setFileName(char *_file_name) {
@@ -146,6 +150,8 @@ int scanTokenOneEach() {
             temp[1] = c_buf;
             if (isContSymbol(temp)) {
                 mode = MODE_CONT_SYMBOL;
+            } else {
+                mode = MODE_SYMBOL;
             }
         } else if (isSymbol(crnt_buf)) {
             mode = MODE_SYMBOL;
