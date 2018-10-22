@@ -2,11 +2,14 @@
 #include <stdlib.h>
 #include "lexical_analysis.h"
 
+//#define DEBUG_MODE
+
 static FILE *fp;
 static char *file_name;
 static int c_buf;
 static int crnt_buf;
-int num_attr = -1;
+static int line_num;
+int num_attr = NONE;
 char str_attr[MAX_WORD_LENGTH];
 
 static void openFile() {
@@ -59,8 +62,12 @@ static int isString(const char c) {
     return c == '\'';
 }
 
-static int isComment(const char c) {
+static int isCommentSlash(const char c) {
     return ((c == '/') || (c == '*'));
+}
+
+static int isCommentBrace(const char c) {
+    return ((c == '{') || (c == '}'));
 }
 
 //連続するシンボルの判定
@@ -77,10 +84,13 @@ static int isContSymbol(char c[2]) {
  * ここでは例外的な入力は認めない
  */
 static int getTokenCode() {
-//    printf("%s\n", str_attr);
-    if (num_attr > 0) {
+#ifdef DEBUG_MODE
+    printf("%s\n", str_attr);
+#endif
+    if (num_attr >= 0) {
         return TNUMBER;
     }
+
     rep(i, 0, NUM_OF_KEY) {
         if (strcmp(str_attr, key[i].keyword) == 0) {
             return key[i].token_number;
@@ -92,14 +102,32 @@ static int getTokenCode() {
             return symbol[j].token_number;
         }
     }
+
+    countUpID(str_attr);
     return TNAME;
+}
+
+static void lineCountUp() {
+    if (crnt_buf == '\r') {
+        line_num++;
+    }
+    if (crnt_buf == '\n') {
+        line_num++;
+    }
+    if ((crnt_buf == '\r' && c_buf == '\n') || (crnt_buf == '\n' && c_buf == '\r')) {
+        line_num--;
+    }
+}
+
+static int getLineNum() {
+    return line_num;
 }
 
 static void clearBuf() {
     rep(i, 0, MAX_WORD_LENGTH) {
         str_attr[i] = '\0';
     }
-    num_attr = 0;
+    num_attr = NONE;
 }
 
 void setFileName(char *_file_name) {
@@ -115,6 +143,7 @@ static void updateBuf(int times) {
 
 void initScan() {
     openFile();
+    line_num = 1;
     c_buf = fgetc(fp);
     clearBuf();
     crnt_buf = c_buf;
@@ -146,15 +175,19 @@ int scanTokenOneEach() {
             temp[1] = c_buf;
             if (isContSymbol(temp)) {
                 mode = MODE_CONT_SYMBOL;
+            } else {
+                mode = MODE_SYMBOL;
             }
         } else if (isSymbol(crnt_buf)) {
             mode = MODE_SYMBOL;
         } else if (isString(crnt_buf)) {
             mode = MODE_STRING;
-        } else if (isComment(crnt_buf) && isComment(c_buf)) {
-            mode = MODE_COMMENT;
+        } else if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
+            mode = MODE_COMMENT_SLASH;
+        } else if (isCommentBrace(crnt_buf)) {
+            mode = MODE_COMMENT_BRACE;
         } else {
-            error("Invalid word");
+            error(getLineNum(), "Invalid word");
         }
 
         switch (mode) {
@@ -172,7 +205,7 @@ int scanTokenOneEach() {
                 }
                 sscanf(str_attr, "%d", &num_attr);
                 if (num_attr > UNSIGNED_INT_MAX) {
-                    error("Over num range(0~32767)");
+                    error(getLineNum(), "Over num range(0~32767)");
                 }
                 break;
 
@@ -192,33 +225,42 @@ int scanTokenOneEach() {
                 while (1) {
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         updateBuf(1);
-//                        clearBuf();
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { //'''の対応
-//                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(2);
                     } else {
-//                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(1);
                     }
                 }
 
             case MODE_SPLIT:
+                lineCountUp();
                 updateBuf(1);
                 return NONE;
 
-            case MODE_COMMENT:
+            case MODE_COMMENT_SLASH:
                 updateBuf(2); //コメント内に入る
                 while (1) {
-                    if (isComment(crnt_buf) && isComment(c_buf)) {
+                    if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
                         break;
                     }
+                    lineCountUp();
                     updateBuf(1);
-                    //TODO: 改行を見つけたときに行数をカウントアップ
                 }
                 updateBuf(2); //コメント外へ
                 return NONE;
 
+            case MODE_COMMENT_BRACE:
+                updateBuf(1); //コメント内に入る
+                while (1) {
+                    if (isCommentBrace(crnt_buf)) {
+                        break;
+                    }
+                    lineCountUp();
+                    updateBuf(1);
+                }
+                updateBuf(1);
+                return NONE;
             default:
                 break;
 
