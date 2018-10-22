@@ -4,9 +4,8 @@
 
 
 int main(int nc, char *np[]) {
-    int token, i;
     if (nc < 2) {
-        printf("File name id not given.¥n");
+        fprintf(stderr,"File name id not given.");
         return EXIT_FAILURE;
     }
 
