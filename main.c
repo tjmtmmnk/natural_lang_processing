@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "my_lib/lexical_analysis.h"
 
-//#define EXEC_MODE
+#define EXEC_MODE
 
 int main(int nc, char *np[]) {
     if (nc < 2) {

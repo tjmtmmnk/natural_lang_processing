@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void error(char *mes) {
-    fprintf(stderr, "ERROR: %s", mes);
+void error(int line_num, char *mes) {
+    fprintf(stderr, "[ERROR] line%d : %s", line_num, mes);
     fflush(stderr);
     exit(1);
 }

@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include "lexical_analysis.h"
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 static FILE *fp;
 static char *file_name;
 static int c_buf;
 static int crnt_buf;
+static int line_num;
 int num_attr = NONE;
 char str_attr[MAX_WORD_LENGTH];
 
@@ -106,6 +107,22 @@ static int getTokenCode() {
     return TNAME;
 }
 
+static void lineCountUp() {
+    if (crnt_buf == '\r') {
+        line_num++;
+    }
+    if (crnt_buf == '\n') {
+        line_num++;
+    }
+    if ((crnt_buf == '\r' && c_buf == '\n') || (crnt_buf == '\n' && c_buf == '\r')) {
+        line_num--;
+    }
+}
+
+static int getLineNum() {
+    return line_num;
+}
+
 static void clearBuf() {
     rep(i, 0, MAX_WORD_LENGTH) {
         str_attr[i] = '\0';
@@ -126,6 +143,7 @@ static void updateBuf(int times) {
 
 void initScan() {
     openFile();
+    line_num = 1;
     c_buf = fgetc(fp);
     clearBuf();
     crnt_buf = c_buf;
@@ -169,7 +187,7 @@ int scanTokenOneEach() {
         } else if (isCommentBrace(crnt_buf)) {
             mode = MODE_COMMENT_BRACE;
         } else {
-            error("Invalid word");
+            error(getLineNum(), "Invalid word");
         }
 
         switch (mode) {
@@ -187,7 +205,7 @@ int scanTokenOneEach() {
                 }
                 sscanf(str_attr, "%d", &num_attr);
                 if (num_attr > UNSIGNED_INT_MAX) {
-                    error("Over num range(0~32767)");
+                    error(getLineNum(), "Over num range(0~32767)");
                 }
                 break;
 
@@ -216,6 +234,7 @@ int scanTokenOneEach() {
                 }
 
             case MODE_SPLIT:
+                lineCountUp();
                 updateBuf(1);
                 return NONE;
 
@@ -225,8 +244,8 @@ int scanTokenOneEach() {
                     if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
                         break;
                     }
+                    lineCountUp();
                     updateBuf(1);
-                    //TODO: 改行を見つけたときに行数をカウントアップ
                 }
                 updateBuf(2); //コメント外へ
                 return NONE;
@@ -237,8 +256,8 @@ int scanTokenOneEach() {
                     if (isCommentBrace(crnt_buf)) {
                         break;
                     }
+                    lineCountUp();
                     updateBuf(1);
-                    //TODO: 改行を見つけたときに行数をカウントアップ
                 }
                 updateBuf(1);
                 return NONE;
