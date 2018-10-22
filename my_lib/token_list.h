@@ -14,6 +14,7 @@
 
 /* Token */
 typedef enum e_name {
+    NONE = 0,
     TNAME = 1
 } eName;
 
@@ -84,7 +85,8 @@ typedef enum MODE {
     MODE_SYMBOL,
     MODE_CONT_SYMBOL,
     MODE_SPLIT,
-    MODE_STRING
+    MODE_STRING,
+    MODE_COMMENT
 } Mode;
 extern const struct KEY {
     char *keyword;

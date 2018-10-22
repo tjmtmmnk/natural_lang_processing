@@ -18,15 +18,15 @@ static void openFile() {
     }
 }
 
-static int isDigit(char c) {
+static int isDigit(const char c) {
     return c >= '0' && c <= '9';
 }
 
-static int isAlphabet(char c) {
+static int isAlphabet(const char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-static int isSplit(char c) {
+static int isSplit(const char c) {
     rep(i, 0, NUM_OF_SPLIT) {
         if (c == split[i]) {
             return 1;
@@ -35,7 +35,7 @@ static int isSplit(char c) {
     return 0;
 }
 
-static int isSymbol(char c) {
+static int isSymbol(const char c) {
     switch (c) {
         case '+':
         case '-':
@@ -57,8 +57,12 @@ static int isSymbol(char c) {
     }
 }
 
-static int isString(char c) {
+static int isString(const char c) {
     return c == '\'';
+}
+
+static int isComment(const char c) {
+    return ((c == '/') || (c == '*'));
 }
 
 //連続するシンボルの判定
@@ -150,6 +154,8 @@ int scanTokenOneEach() {
             mode = MODE_SYMBOL;
         } else if (isString(crnt_buf)) {
             mode = MODE_STRING;
+        } else if (isComment(crnt_buf) && isComment(c_buf)) {
+            mode = MODE_COMMENT;
         } else {
             error("Invalid word");
         }
@@ -157,7 +163,7 @@ int scanTokenOneEach() {
         switch (mode) {
             case MODE_SPLIT:
                 updateBuf(1);
-                return 0;
+                return NONE;
 
             case MODE_ALPHA_NUM:
                 while (isAlphabet(crnt_buf) || isDigit(crnt_buf)) {
@@ -193,6 +199,7 @@ int scanTokenOneEach() {
                 while (1) {
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         printf("%s\n", str_attr);
+                        updateBuf(1);
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { //'''の対応
                         str_attr[buf_i++] = crnt_buf;
@@ -202,6 +209,17 @@ int scanTokenOneEach() {
                         updateBuf(1);
                     }
                 }
+            case MODE_COMMENT:
+                updateBuf(2); //コメント内に入る
+                while (1) {
+                    if (isComment(crnt_buf) && isComment(c_buf)) {
+                        break;
+                    }
+                    updateBuf(1);
+                    //TODO: 改行を見つけたときに行数をカウントアップ
+                }
+                updateBuf(2); //コメント外へ
+                return NONE;
             default:
                 break;
 
