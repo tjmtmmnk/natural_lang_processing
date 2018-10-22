@@ -85,6 +85,7 @@ static int getTokenCode() {
     if (num_attr >= 0) {
         return TNUMBER;
     }
+
     rep(i, 0, NUM_OF_KEY) {
         if (strcmp(str_attr, key[i].keyword) == 0) {
             return key[i].token_number;
@@ -96,6 +97,8 @@ static int getTokenCode() {
             return symbol[j].token_number;
         }
     }
+
+    countUpID(str_attr);
     return TNAME;
 }
 
@@ -198,13 +201,10 @@ int scanTokenOneEach() {
                 while (1) {
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         updateBuf(1);
-//                        clearBuf();
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { //'''の対応
-//                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(2);
                     } else {
-//                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(1);
                     }
                 }

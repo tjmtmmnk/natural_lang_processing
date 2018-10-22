@@ -21,9 +21,11 @@ int main(int nc, char *np[]) {
 #ifdef EXEC_MODE
     rep(i, 1, NUM_OF_TOKEN + 1) {
         if (token_counter[i] > 0) {
-            printf("%s\t%d\n", token_str[i], token_counter[i]);
+            printf("%-10s\t%28d\n", token_str[i], token_counter[i]);
         }
     }
+    printf("\n");
+    debugIDTable();
 #endif
 
     closeFile();

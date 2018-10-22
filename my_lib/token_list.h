@@ -88,6 +88,7 @@ typedef enum MODE {
     MODE_STRING,
     MODE_COMMENT
 } Mode;
+
 extern const struct KEY {
     char *keyword;
     int token_number;
@@ -98,13 +99,18 @@ extern const struct SYMBOL {
     int token_number;
 } symbol[NUM_OF_SYMBOL];
 
-//連続するシンボル
-extern const char cont_sym[NUM_OF_CONT_SYMBOL][3];
+
+struct ID {
+    char *name;
+    int count;
+    struct ID *nextp;
+} *idroot;
+
+extern const char cont_sym[NUM_OF_CONT_SYMBOL][3]; //連続するシンボル
 extern const char split[NUM_OF_SPLIT];
 extern int token_counter[NUM_OF_TOKEN + 1];
 
-/* string of each token */
-extern char *token_str[NUM_OF_TOKEN + 1];
+extern char *token_str[NUM_OF_TOKEN + 1]; /* string of each token */
 
 
 #endif //NATURAL_LANG_PROCESS_TOKEN_LIST_H
