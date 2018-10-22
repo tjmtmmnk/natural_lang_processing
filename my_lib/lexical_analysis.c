@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "lexical_analysis.h"
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 static FILE *fp;
 static char *file_name;
@@ -61,8 +61,12 @@ static int isString(const char c) {
     return c == '\'';
 }
 
-static int isComment(const char c) {
+static int isCommentSlash(const char c) {
     return ((c == '/') || (c == '*'));
+}
+
+static int isCommentBrace(const char c) {
+    return ((c == '{') || (c == '}'));
 }
 
 //連続するシンボルの判定
@@ -160,8 +164,10 @@ int scanTokenOneEach() {
             mode = MODE_SYMBOL;
         } else if (isString(crnt_buf)) {
             mode = MODE_STRING;
-        } else if (isComment(crnt_buf) && isComment(c_buf)) {
-            mode = MODE_COMMENT;
+        } else if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
+            mode = MODE_COMMENT_SLASH;
+        } else if (isCommentBrace(crnt_buf)) {
+            mode = MODE_COMMENT_BRACE;
         } else {
             error("Invalid word");
         }
@@ -213,10 +219,10 @@ int scanTokenOneEach() {
                 updateBuf(1);
                 return NONE;
 
-            case MODE_COMMENT:
+            case MODE_COMMENT_SLASH:
                 updateBuf(2); //コメント内に入る
                 while (1) {
-                    if (isComment(crnt_buf) && isComment(c_buf)) {
+                    if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
                         break;
                     }
                     updateBuf(1);
@@ -225,6 +231,17 @@ int scanTokenOneEach() {
                 updateBuf(2); //コメント外へ
                 return NONE;
 
+            case MODE_COMMENT_BRACE:
+                updateBuf(1); //コメント内に入る
+                while (1) {
+                    if (isCommentBrace(crnt_buf)) {
+                        break;
+                    }
+                    updateBuf(1);
+                    //TODO: 改行を見つけたときに行数をカウントアップ
+                }
+                updateBuf(1);
+                return NONE;
             default:
                 break;
 

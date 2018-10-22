@@ -86,7 +86,8 @@ typedef enum MODE {
     MODE_CONT_SYMBOL,
     MODE_SPLIT,
     MODE_STRING,
-    MODE_COMMENT
+    MODE_COMMENT_SLASH, // /**/
+    MODE_COMMENT_BRACE  // {}
 } Mode;
 
 extern const struct KEY {
