@@ -1,6 +1,9 @@
 #ifndef NATURAL_LANG_PROCESS_LEXICAL_ANALYSIS_H
 #define NATURAL_LANG_PROCESS_LEXICAL_ANALYSIS_H
 
+#include "token_list.h"
+#include "common.h"
+
 #define MAX_WORD_LENGTH 1000
 #define UNSIGNED_INT_MAX 32767
 #define SCAN_END -1

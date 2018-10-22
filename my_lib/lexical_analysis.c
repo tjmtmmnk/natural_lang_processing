@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lexical_analysis.h"
-#include "token_list.h"
-#include "common.h"
 
 static FILE *fp;
 static char *file_name;
@@ -79,7 +77,7 @@ static int isContSymbol(char c[2]) {
  * ここでは例外的な入力は認めない
  */
 static int getTokenCode() {
-    printf("%s\n", str_attr);
+//    printf("%s\n", str_attr);
     if (num_attr > 0) {
         return TNUMBER;
     }
@@ -90,11 +88,10 @@ static int getTokenCode() {
     }
 
     rep(j, 0, NUM_OF_SYMBOL) {
-        if (strcmp(str_attr, symbol[i].symbol) == 0) {
+        if (strcmp(str_attr, symbol[j].symbol) == 0) {
             return symbol[j].token_number;
         }
     }
-
     return TNAME;
 }
 
@@ -161,10 +158,6 @@ int scanTokenOneEach() {
         }
 
         switch (mode) {
-            case MODE_SPLIT:
-                updateBuf(1);
-                return NONE;
-
             case MODE_ALPHA_NUM:
                 while (isAlphabet(crnt_buf) || isDigit(crnt_buf)) {
                     str_attr[buf_i++] = crnt_buf;
@@ -198,17 +191,22 @@ int scanTokenOneEach() {
                 updateBuf(1); // ''' 内に入る
                 while (1) {
                     if (isString(crnt_buf) && !isString(c_buf)) {
-                        printf("%s\n", str_attr);
                         updateBuf(1);
+//                        clearBuf();
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { //'''の対応
-                        str_attr[buf_i++] = crnt_buf;
+//                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(2);
                     } else {
-                        str_attr[buf_i++] = crnt_buf;
+//                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(1);
                     }
                 }
+
+            case MODE_SPLIT:
+                updateBuf(1);
+                return NONE;
+
             case MODE_COMMENT:
                 updateBuf(2); //コメント内に入る
                 while (1) {
@@ -220,6 +218,7 @@ int scanTokenOneEach() {
                 }
                 updateBuf(2); //コメント外へ
                 return NONE;
+
             default:
                 break;
 
@@ -227,8 +226,13 @@ int scanTokenOneEach() {
         if (buf_i == 0) {
             updateBuf(1);
         }
+
         token_code = getTokenCode();
         clearBuf();
+
+        if (token_code > 0) {
+            return token_code;
+        }
     }
     return token_code;
 }
