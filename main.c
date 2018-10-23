@@ -15,7 +15,9 @@ int main(int nc, char *np[]) {
 
     int token_code;
     while ((token_code = scanTokenOneEach()) != SCAN_END) {
-        token_counter[token_code]++;
+        if (token_code >= 0) {
+            token_counter[token_code]++;
+        }
     }
 
 #ifdef EXEC_MODE
