@@ -130,6 +130,36 @@ static void clearBuf() {
     num_attr = NONE;
 }
 
+static Mode getMode(int _crnt_buf, int _c_buf) {
+    if (isAlphabet(_crnt_buf)) {
+        return MODE_ALPHA_NUM;
+    } else if (isDigit(_crnt_buf)) {
+        return MODE_NUM;
+    } else if (isSplit(_crnt_buf)) {
+        return MODE_SPLIT;
+    } else if (isSymbol(_crnt_buf) && isSymbol(_c_buf)) {
+        char temp[2];
+        temp[0] = _crnt_buf;
+        temp[1] = _c_buf;
+        if (isContSymbol(temp)) {
+            return MODE_CONT_SYMBOL;
+        } else {
+            return MODE_SYMBOL;
+        }
+    } else if (isSymbol(_crnt_buf)) {
+        return MODE_SYMBOL;
+    } else if (isString(_crnt_buf)) {
+        return MODE_STRING;
+    } else if (isCommentSlash(_crnt_buf) && isCommentSlash(_c_buf)) {
+        return MODE_COMMENT_SLASH;
+    } else if (isCommentBrace(_crnt_buf)) {
+        return MODE_COMMENT_BRACE;
+    } else {
+        error(getLineNum(), "Invalid word");
+    }
+    return MODE_NONE;
+}
+
 void setFileName(char *_file_name) {
     file_name = _file_name;
 }
@@ -155,7 +185,7 @@ void closeFile() {
 }
 
 /* @return : token_code
- * if failed return minus value
+ * if failed return SCAN_END
  */
 
 int scanTokenOneEach() {
@@ -166,32 +196,7 @@ int scanTokenOneEach() {
      * process in each mode
      */
     while (crnt_buf != EOF || c_buf != EOF) {
-        if (isAlphabet(crnt_buf)) {
-            mode = MODE_ALPHA_NUM;
-        } else if (isDigit(crnt_buf)) {
-            mode = MODE_NUM;
-        } else if (isSplit(crnt_buf)) {
-            mode = MODE_SPLIT;
-        } else if (isSymbol(crnt_buf) && isSymbol(c_buf)) {
-            char temp[2];
-            temp[0] = crnt_buf;
-            temp[1] = c_buf;
-            if (isContSymbol(temp)) {
-                mode = MODE_CONT_SYMBOL;
-            } else {
-                mode = MODE_SYMBOL;
-            }
-        } else if (isSymbol(crnt_buf)) {
-            mode = MODE_SYMBOL;
-        } else if (isString(crnt_buf)) {
-            mode = MODE_STRING;
-        } else if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
-            mode = MODE_COMMENT_SLASH;
-        } else if (isCommentBrace(crnt_buf)) {
-            mode = MODE_COMMENT_BRACE;
-        } else {
-            error(getLineNum(), "Invalid word");
-        }
+        mode = getMode(crnt_buf, c_buf);
 
         switch (mode) {
             case MODE_ALPHA_NUM:
