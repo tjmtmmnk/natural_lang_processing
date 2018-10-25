@@ -138,7 +138,7 @@ static Mode getMode(int _crnt_buf, int _c_buf) {
     } else if (isSplit(_crnt_buf)) {
         return MODE_SPLIT;
     } else if (isSymbol(_crnt_buf) && isSymbol(_c_buf)) {
-        char temp[2];
+        char temp[1];
         temp[0] = _crnt_buf;
         temp[1] = _c_buf;
         if (isContSymbol(temp)) {
