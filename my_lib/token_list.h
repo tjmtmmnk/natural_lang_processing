@@ -107,7 +107,7 @@ struct ID {
     struct ID *nextp;
 } *idroot;
 
-extern const char cont_sym[NUM_OF_CONT_SYMBOL][3]; //連続するシンボル
+extern const char cont_sym[NUM_OF_CONT_SYMBOL][3]; //continuous symbol
 extern const char split[NUM_OF_SPLIT];
 extern int token_counter[NUM_OF_TOKEN + 1];
 

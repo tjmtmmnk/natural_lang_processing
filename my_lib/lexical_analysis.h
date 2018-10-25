@@ -18,7 +18,7 @@ extern void countUpID(char *np);
 
 extern void debugIDTable();
 
-// @return : 次のトークンコード
+// @return : token_code
 extern int scanTokenOneEach();
 
 extern int num_attr;

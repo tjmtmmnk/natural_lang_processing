@@ -70,7 +70,7 @@ static int isCommentBrace(const char c) {
     return ((c == '{') || (c == '}'));
 }
 
-//連続するシンボルの判定
+// judge continuous symbol
 static int isContSymbol(char c[2]) {
     rep(i, 0, NUM_OF_CONT_SYMBOL) {
         if (strcmp(cont_sym[i], c) == 0) {
@@ -80,8 +80,8 @@ static int isContSymbol(char c[2]) {
     return 0;
 }
 
-/* @input : 数字 or キーワード or シンボル or 名前
- * ここでは例外的な入力は認めない
+/* @input : number or keyword or symbol or name
+ * Don't allow exception in this function
  */
 static int getTokenCode() {
 #ifdef DEBUG_MODE
@@ -154,13 +154,16 @@ void closeFile() {
     fclose(fp);
 }
 
-// @return : トークンコード, 失敗したら-1
+/* @return : token_code
+ * if failed return minus value
+ */
+
 int scanTokenOneEach() {
     Mode mode = MODE_NONE;
     int token_code = SCAN_END;
     int buf_i = 0;
-    /* 初めの1字で分岐
-     * 各モードでそれぞれ処理する
+    /* branch off first character
+     * process in each mode
      */
     while (crnt_buf != EOF || c_buf != EOF) {
         if (isAlphabet(crnt_buf)) {
@@ -221,12 +224,12 @@ int scanTokenOneEach() {
                 break;
 
             case MODE_STRING:
-                updateBuf(1); // ''' 内に入る
+                updateBuf(1); // get into '''
                 while (1) {
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         updateBuf(1);
                         return TSTRING;
-                    } else if (isString(crnt_buf) && isString(c_buf)) { //'''の対応
+                    } else if (isString(crnt_buf) && isString(c_buf)) { // correspond to ''' in string
                         updateBuf(2);
                     } else {
                         updateBuf(1);
@@ -239,19 +242,19 @@ int scanTokenOneEach() {
                 return NONE;
 
             case MODE_COMMENT_SLASH:
-                updateBuf(2); //コメント内に入る
+                updateBuf(2); //get into comment
                 while (1) {
                     if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
                         break;
                     }
-                    lineCountUp();
+                    lineCountUp(); //count up line_num if there is new line character in comment
                     updateBuf(1);
                 }
-                updateBuf(2); //コメント外へ
+                updateBuf(2); //get out comment
                 return NONE;
 
             case MODE_COMMENT_BRACE:
-                updateBuf(1); //コメント内に入る
+                updateBuf(1);
                 while (1) {
                     if (isCommentBrace(crnt_buf)) {
                         break;
@@ -278,8 +281,3 @@ int scanTokenOneEach() {
     }
     return token_code;
 }
-
-int getLatestFoundTokenLine() {
-    return 0;
-}
-
