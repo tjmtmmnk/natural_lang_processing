@@ -80,6 +80,10 @@ static int isContSymbol(const char c[3]) {
     return 0;
 }
 
+static int isEOF(const int c) {
+    return c == -1;
+}
+
 /* @input : number or keyword or symbol or name
  * Don't allow exception in this function
  */
@@ -231,6 +235,10 @@ int scanTokenOneEach() {
             case MODE_STRING:
                 updateBuf(1); // get into '''
                 while (1) {
+                    if (isEOF(crnt_buf) || isEOF(c_buf)) {
+                        error(getLineNum(), "Don't close string");
+                    }
+
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         updateBuf(1);
                         return TSTRING;
@@ -252,6 +260,9 @@ int scanTokenOneEach() {
                     if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
                         break;
                     }
+                    if (isEOF(crnt_buf) || isEOF(c_buf)) {
+                        error(getLineNum(), "Don't close comment");
+                    }
                     lineCountUp(); //count up line_num if there is new line character in comment
                     updateBuf(1);
                 }
@@ -263,6 +274,9 @@ int scanTokenOneEach() {
                 while (1) {
                     if (isCommentBrace(crnt_buf)) {
                         break;
+                    }
+                    if (isEOF(crnt_buf) || isEOF(c_buf)) {
+                        error(getLineNum(), "Don't close comment");
                     }
                     lineCountUp();
                     updateBuf(1);
@@ -278,6 +292,9 @@ int scanTokenOneEach() {
         }
 
         token_code = getTokenCode();
+        if (buf_i > MAX_WORD_LENGTH) {
+            error(getLineNum(), "Too long words");
+        }
         clearBuf();
 
         if (token_code > 0) {
