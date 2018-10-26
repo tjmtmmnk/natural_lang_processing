@@ -235,17 +235,24 @@ int scanTokenOneEach() {
             case MODE_STRING:
                 updateBuf(1); // get into '''
                 while (1) {
-                    if (isEOF(crnt_buf) || isEOF(c_buf)) {
+                    if (isEOF(crnt_buf)) {
                         error(getLineNum(), "Don't close string");
                     }
 
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         updateBuf(1);
+
+                        if (buf_i > (MAX_WORD_LENGTH - 1)) {
+                            error(getLineNum(), "Too long words in string");
+                        }
+
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { // correspond to ''' in string
                         updateBuf(2);
+                        buf_i++;
                     } else {
                         updateBuf(1);
+                        buf_i++;
                     }
                 }
 
@@ -260,7 +267,7 @@ int scanTokenOneEach() {
                     if (isCommentSlash(crnt_buf) && isCommentSlash(c_buf)) {
                         break;
                     }
-                    if (isEOF(crnt_buf) || isEOF(c_buf)) {
+                    if (isEOF(crnt_buf)) {
                         error(getLineNum(), "Don't close comment");
                     }
                     lineCountUp(); //count up line_num if there is new line character in comment
@@ -275,7 +282,7 @@ int scanTokenOneEach() {
                     if (isCommentBrace(crnt_buf)) {
                         break;
                     }
-                    if (isEOF(crnt_buf) || isEOF(c_buf)) {
+                    if (isEOF(crnt_buf)) {
                         error(getLineNum(), "Don't close comment");
                     }
                     lineCountUp();
@@ -291,7 +298,7 @@ int scanTokenOneEach() {
             updateBuf(1);
         }
 
-        if (buf_i > MAX_WORD_LENGTH) {
+        if (buf_i > (MAX_WORD_LENGTH - 1)) {
             error(getLineNum(), "Too long words");
         }
 
