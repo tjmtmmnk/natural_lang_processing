@@ -291,10 +291,11 @@ int scanTokenOneEach() {
             updateBuf(1);
         }
 
-        token_code = getTokenCode();
         if (buf_i > MAX_WORD_LENGTH) {
             error(getLineNum(), "Too long words");
         }
+
+        token_code = getTokenCode();
         clearBuf();
 
         if (token_code > 0) {
