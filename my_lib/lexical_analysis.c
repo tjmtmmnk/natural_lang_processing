@@ -71,7 +71,7 @@ static int isCommentBrace(const char c) {
 }
 
 // judge continuous symbol
-static int isContSymbol(char c[2]) {
+static int isContSymbol(const char c[3]) {
     rep(i, 0, NUM_OF_CONT_SYMBOL) {
         if (strcmp(cont_sym[i], c) == 0) {
             return 1;
@@ -138,7 +138,7 @@ static Mode getMode(int _crnt_buf, int _c_buf) {
     } else if (isSplit(_crnt_buf)) {
         return MODE_SPLIT;
     } else if (isSymbol(_crnt_buf) && isSymbol(_c_buf)) {
-        char temp[1];
+        char temp[3] = {'\0'};
         temp[0] = _crnt_buf;
         temp[1] = _c_buf;
         if (isContSymbol(temp)) {
