@@ -4,7 +4,7 @@
 #include "token_list.h"
 #include "common.h"
 
-#define MAX_WORD_LENGTH 1000
+#define MAX_WORD_LENGTH 1024
 #define UNSIGNED_INT_MAX 32767
 #define SCAN_END -1
 
