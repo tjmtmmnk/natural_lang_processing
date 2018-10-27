@@ -240,17 +240,21 @@ int scanTokenOneEach() {
                     }
 
                     if (isString(crnt_buf) && !isString(c_buf)) {
-                        updateBuf(1);
-
                         if (buf_i > (MAX_WORD_LENGTH - 1)) {
                             error(getLineNum(), "Too long words in string");
                         }
+
+                        updateBuf(1);
 
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { // correspond to ''' in string
                         updateBuf(2);
                         buf_i += 2; //count apostrophes one by one
                     } else {
+                        if (crnt_buf == '\r' || crnt_buf == '\n') {
+                            error(getLineNum(), "Can't contain new line character");
+                        }
+
                         updateBuf(1);
                         buf_i++;
                     }
