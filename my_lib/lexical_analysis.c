@@ -249,7 +249,7 @@ int scanTokenOneEach() {
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { // correspond to ''' in string
                         updateBuf(2);
-                        buf_i++;
+                        buf_i += 2; //count apostrophes one by one
                     } else {
                         updateBuf(1);
                         buf_i++;
