@@ -81,7 +81,7 @@ static int isContSymbol(const char c[3]) {
 }
 
 static int isEOF(const int c) {
-    return c == -1;
+    return c == EOF;
 }
 
 /* @input : number or keyword or symbol or name
@@ -252,7 +252,7 @@ int scanTokenOneEach() {
                         buf_i += 2; //count apostrophes one by one
                     } else {
                         if (crnt_buf == '\r' || crnt_buf == '\n') {
-                            error(getLineNum(), "Can't contain new line character");
+                            error(getLineNum(), "Can't contain new line character in string");
                         }
 
                         updateBuf(1);
