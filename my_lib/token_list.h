@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX_STR_SIZE 1024
 #define NUM_OF_TOKEN 49
 #define NUM_OF_SYMBOL 18
 #define NUM_OF_KEY 28

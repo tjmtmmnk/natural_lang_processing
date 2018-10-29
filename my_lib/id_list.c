@@ -1,6 +1,6 @@
 #include "token_list.h"
 
-void initIDTable() {        /* Initialise the table */
+static void initIDTable() {        /* Initialise the table */
     idroot = NULL;
 }
 
