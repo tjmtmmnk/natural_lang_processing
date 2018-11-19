@@ -3,11 +3,6 @@
 
 static int token;
 
-int parseCompoundState() {
-
-}
-
-
 int parseStandardType() {
     if (token != TINTEGER || token != TBOOLEAN || token != TCHAR) {
         return errorWithReturn(getLineNum(), "'standart type' is not found");
@@ -47,8 +42,10 @@ int parseArrayType() {
 }
 
 int parseType() {
-    if (parseStandardType() == ERROR || parseArrayType() == ERROR) {
-        return ERROR;
+    if (token == TINTEGER || token == TBOOLEAN || token == TCHAR || token == TARRAY) {
+        if (parseStandardType() == ERROR || parseArrayType() == ERROR) {
+            return ERROR;
+        }
     }
 }
 
@@ -139,7 +136,7 @@ int parseFormalParam() {
         return ERROR;
     }
 
-    while (token == ";") {
+    while (token == TSEMI) {
         token = scanTokenOneEach();
 
         if (parseVarNames() == ERROR) {
@@ -280,12 +277,12 @@ int parseCallState() {
         return ERROR;
     }
 
-    if (token == "(") {
+    if (token == TLPAREN) {
         token = scanTokenOneEach();
         if (parseExpressions() == ERROR) {
             return ERROR;
         }
-        if (token != ")") {
+        if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
         }
         token = scanTokenOneEach();
@@ -293,14 +290,17 @@ int parseCallState() {
 }
 
 int parseReturnState() {
-
+    if (token != TRETURN) {
+        errorWithReturn(getLineNum(), "'return' is not found");
+    }
+    token = scanTokenOneEach();
 }
 
 int parseExpressions() {
     if (parseExpression() == ERROR) {
         return ERROR;
     }
-    while (token == ",") {
+    while (token == TCOMMA) {
         token = scanTokenOneEach();
         if (parseExpression() == ERROR) {
             return ERROR;
@@ -309,15 +309,96 @@ int parseExpressions() {
 }
 
 int parseAssignState() {
+    if (parseVariable() == ERROR) {
+        return ERROR;
+    }
+    if (token != TASSIGN) {
+        return errorWithReturn(getLineNum(), "':=' is not found");
+    }
+    token = scanTokenOneEach();
 
+    if (parseExpression() == ERROR) {
+        return ERROR;
+    }
 }
 
 int parseInputState() {
+    if (token != TREAD || token != TREADLN) {
+        return errorWithReturn(getLineNum(), "'input state' is not found");
+    }
+    if (token == TLPAREN) {
+        token = scanTokenOneEach();
+        if (parseVariable() == ERROR) {
+            return ERROR;
+        }
+        while (token == TCOMMA) {
+            token = scanTokenOneEach();
+            if (parseVariable() == ERROR) {
+                return ERROR;
+            }
+        }
+        if (token != TRPAREN) {
+            return errorWithReturn(getLineNum(), "')' is not found");
+        }
+        token = scanTokenOneEach();
+    }
+}
 
+int parseOutputFormat() {
+    if (parseExpression() == ERROR) {
+        return ERROR;
+    }
+    if (token == TCOLON || token == TSTRING) {
+        if (token == TCOLON) {
+            token = scanTokenOneEach();
+            if (token != TNUMBER) {
+                return errorWithReturn(getLineNum(), "'number' is not found");
+            }
+        }
+        if (token == TSTRING) {
+            token = scanTokenOneEach();
+        }
+    }
 }
 
 int parseOutputState() {
+    if (token != TWRITE || token != TWRITELN) {
+        return errorWithReturn(getLineNum(), "'output state' is not found");
+    }
+    if (token == TLPAREN) {
+        token = scanTokenOneEach();
+        if (parseOutputFormat() == ERROR) {
+            return ERROR;
+        }
+        while (token == TCOMMA) {
+            token = scanTokenOneEach();
+            if (parseOutputFormat() == ERROR) {
+                return ERROR;
+            }
+        }
+        if (token != TRPAREN) {
+            return errorWithReturn(getLineNum(), "')' is not found");
+        }
+        token = scanTokenOneEach();
+    }
+}
 
+int parseCompoundState() {
+    if (token != TBEGIN) {
+        return errorWithReturn(getLineNum(), "'begin' is not found");
+    }
+    if (parseState() == ERROR) {
+        return ERROR;
+    }
+    while (token == TSEMI) {
+        token = scanTokenOneEach();
+        if (parseState() == ERROR) {
+            return ERROR;
+        }
+    }
+    if (token != TEND) {
+        return errorWithReturn(getLineNum(), "'end' is not found");
+    }
 }
 
 int parseState() {
@@ -329,14 +410,20 @@ int parseState() {
     }
 }
 
-// 式の並び
-int parseSeqOfExpression() {
-
-}
-
 // left partと同義
 int parseVariable() {
-
+    if (parseName() == ERROR) {
+        return ERROR;
+    }
+    if (token == TLSQPAREN) {
+        token = scanTokenOneEach();
+        if (parseExpression() == ERROR) {
+            return ERROR;
+        }
+        if (token != TRSQPAREN) {
+            return errorWithReturn(getLineNum(), "']' is not found");
+        }
+    }
 }
 
 int parseSimpleExpression() {
@@ -373,23 +460,69 @@ int parseTerm() {
 }
 
 int parseFactor() {
-
+    if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
+        token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
+        if (token == TNAME) {
+            if (parseVarNames() == ERROR) {
+                return ERROR;
+            }
+        }
+        if (token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING) {
+            if (parseConst() == ERROR) {
+                return ERROR;
+            }
+        }
+        if (token == TLPAREN) {
+            token = scanTokenOneEach();
+            if (parseExpression() == ERROR) {
+                return ERROR;
+            }
+            if (token != TRPAREN) {
+                return errorWithReturn(getLineNum(), "')' is not found");
+            }
+        }
+        if (token == TNOT) {
+            token = scanTokenOneEach();
+            if (parseFactor() == ERROR) {
+                return ERROR;
+            }
+        }
+        if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
+            token = scanTokenOneEach();
+            if (token != TLPAREN) {
+                return errorWithReturn(getLineNum(), "'(' is not found");
+            }
+            token = scanTokenOneEach();
+            if (parseExpression() == ERROR) {
+                return ERROR;
+            }
+            if (token != TRPAREN) {
+                return errorWithReturn(getLineNum(), "')' is not found");
+            }
+        }
+    }
+    return OK;
 }
 
 int parseConst() {
-
+    if (token != TNUMBER || token != TFALSE || token != TTRUE || token != TSTRING) {
+        return errorWithReturn(getLineNum(), "'constant' is not found");
+    }
+    token = scanTokenOneEach();
 }
 
 int parseMultiOperator() {
-
+    if (token != TSTAR || token != TDIV || token != TAND) {
+        return errorWithReturn(getLineNum(), "'multi operator' is not found");
+    }
+    token = scanTokenOneEach();
 }
 
 int parseAddOperator() {
-
-}
-
-int parseOutputFormat() {
-
+    if (token != TPLUS || token != TMINUS || token != TOR) {
+        return errorWithReturn(getLineNum(), "'add operator' is not found");
+    }
+    token = scanTokenOneEach();
 }
 
 int parseEmptyState() { //TODO : 空文にならない条件の実装
@@ -400,7 +533,6 @@ int parseEmptyState() { //TODO : 空文にならない条件の実装
     return OK;
 
 }
-
 
 int parseBlock() {
     while (token == TVAR) {
