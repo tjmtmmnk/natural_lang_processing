@@ -123,10 +123,6 @@ static void lineCountUp() {
     }
 }
 
-static int getLineNum() {
-    return line_num;
-}
-
 static void clearBuf() {
     rep(i, 0, MAX_WORD_LENGTH) {
         str_attr[i] = '\0';
@@ -162,6 +158,10 @@ static Mode getMode(int _crnt_buf, int _c_buf) {
         error(getLineNum(), "Invalid word");
     }
     return MODE_NONE;
+}
+
+int getLineNum() {
+    return line_num;
 }
 
 void setFileName(char *_file_name) {
