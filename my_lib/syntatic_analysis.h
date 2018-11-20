@@ -6,4 +6,5 @@
 
 extern int parseProgram();
 extern void initSyntaticAnalysis(int _token);
+
 #endif //NATURAL_LANG_PROCESS_SYNTATIC_ANALYSIS_H
