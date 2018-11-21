@@ -17,13 +17,9 @@ static int parseVarDecler();
 
 static int parseFormalParam();
 
-static int parseConst();
-
 static int parseTerm();
 
 static int parseSimpleExpression();
-
-static int parseRelateOperator();
 
 static int parseExpression();
 
@@ -37,11 +33,7 @@ static int parseIterationState();
 
 static int parseCompoundState();
 
-static int parseExitState();
-
 static int parseCallState();
-
-static int parseReturnState();
 
 static int parseExpressions();
 
@@ -56,12 +48,6 @@ static int parseOutputState();
 static int parseState();
 
 static int parseVariable();
-
-static int parseMultiOperator();
-
-static int parseAddOperator();
-
-static int parseEmptyState();
 
 static int parseBlock();
 
@@ -188,7 +174,7 @@ static int parseVarDecler() {
         token = scanTokenOneEach();
     }
 
-    if (token != TBEGIN) {
+    if (token != TBEGIN) { // for error (don't matter the action)
         return errorWithReturn(getLineNum(), "invalid word after ';'");
     }
     return OK;
@@ -237,23 +223,13 @@ static int parseFormalParam() {
     return OK;
 }
 
-static int parseConst() {
-    if (token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING) {
-        token = scanTokenOneEach();
-    } else {
-        return errorWithReturn(getLineNum(), "'constant' is not found");
-    }
-    return OK;
-}
-
 static int parseTerm() {
     if (parseFactor() == ERROR) {
         return ERROR;
     }
     while (token == TSTAR || token == TDIV || token == TAND) {
-        if (parseMultiOperator() == ERROR) {
-            return ERROR;
-        }
+        token = scanTokenOneEach(); //multi operator
+
         if (parseFactor() == ERROR) {
             return ERROR;
         }
@@ -271,21 +247,10 @@ static int parseSimpleExpression() {
     }
 
     while (token == TPLUS || token == TMINUS || token == TOR) {
-        if (parseAddOperator() == ERROR) {
-            return ERROR;
-        }
+        token = scanTokenOneEach(); //add operator
         if (parseTerm() == ERROR) {
             return ERROR;
         }
-    }
-    return OK;
-}
-
-static int parseRelateOperator() {
-    if (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
-        token = scanTokenOneEach();
-    } else {
-        return errorWithReturn(getLineNum(), "'relational operator' is not found");
     }
     return OK;
 }
@@ -295,9 +260,7 @@ static int parseExpression() {
         return ERROR;
     }
     while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
-        if (parseRelateOperator() == ERROR) {
-            return ERROR;
-        }
+        token = scanTokenOneEach(); //relational operator
         if (parseSimpleExpression() == ERROR) {
             return ERROR;
         }
@@ -317,9 +280,7 @@ static int parseFactor() {
         case TFALSE:
         case TTRUE:
         case TSTRING: {
-            if (parseConst() == ERROR) {
-                return ERROR;
-            }
+            token = scanTokenOneEach();
             break;
         }
         case TLPAREN: {
@@ -354,6 +315,7 @@ static int parseFactor() {
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
             }
+            token = scanTokenOneEach();
             break;
         }
     }
@@ -445,19 +407,8 @@ static int parseIterationState() {
     return OK;
 }
 
-static int parseExitState() {
-    if (token != TBREAK) {
-        return errorWithReturn(getLineNum(), "'break' is not found");
-    }
-    token = scanTokenOneEach();
-    return OK;
-}
-
 static int parseCallState() {
-    if (token != TCALL) {
-        return errorWithReturn(getLineNum(), "'call' is not found");
-    }
-
+    token = scanTokenOneEach();
     if (parseName() == ERROR) {
         return ERROR;
     }
@@ -472,14 +423,6 @@ static int parseCallState() {
         }
         token = scanTokenOneEach();
     }
-    return OK;
-}
-
-static int parseReturnState() {
-    if (token != TRETURN) {
-        errorWithReturn(getLineNum(), "'return' is not found");
-    }
-    token = scanTokenOneEach();
     return OK;
 }
 
@@ -603,9 +546,7 @@ static int parseState() {
             break;
         }
         case TBREAK: {
-            if (parseExitState() == ERROR) {
-                return ERROR;
-            }
+            token = scanTokenOneEach(); //parse break
             break;
         }
         case TCALL: {
@@ -614,6 +555,9 @@ static int parseState() {
             }
             break;
         }
+        case TRETURN:
+            token = scanTokenOneEach();
+            break;
         case TREAD:
         case TREADLN: {
             if (parseInputState() == ERROR) {
@@ -635,9 +579,7 @@ static int parseState() {
             break;
         }
         default:
-            if (parseEmptyState() == ERROR) {
-                return ERROR;
-            }
+            token = scanTokenOneEach(); //empty state
             break;
     }
     return OK;
@@ -660,13 +602,14 @@ static int parseCompoundState() {
         }
     }
     if (token != TEND) {
+        printf("%s\n", token_str[token]);
         return errorWithReturn(getLineNum(), "'end' is not found");
     }
     token = scanTokenOneEach();
     return OK;
 }
 
-// left partと同義
+// equal to "left part"
 static int parseVariable() {
     if (parseName() == ERROR) {
         return ERROR;
@@ -681,29 +624,6 @@ static int parseVariable() {
         }
         token = scanTokenOneEach();
     }
-    return OK;
-}
-
-static int parseMultiOperator() {
-    if (token != TSTAR || token != TDIV || token != TAND) {
-        return errorWithReturn(getLineNum(), "'multi operator' is not found");
-    }
-    token = scanTokenOneEach();
-    return OK;
-}
-
-static int parseAddOperator() {
-    if (token == TPLUS || token == TMINUS || token == TOR) {
-        token = scanTokenOneEach();
-    } else {
-        return errorWithReturn(getLineNum(), "'add operator' is not found");
-    }
-
-    return OK;
-}
-
-static int parseEmptyState() {
-    token = scanTokenOneEach();
     return OK;
 }
 
@@ -726,11 +646,7 @@ static int parseBlock() {
     return OK;
 }
 
-/****************** 外部関数 *********************/
-void initSyntaticAnalysis(int _token) {
-    token = _token;
-}
-
+/****************** public function *********************/
 int parseProgram() {
     token = scanTokenOneEach();
 
@@ -756,6 +672,5 @@ int parseProgram() {
     if (token != TDOT) {
         return errorWithReturn(getLineNum(), "'.' is not found");
     }
-    token = scanTokenOneEach();
     return OK;
 }
