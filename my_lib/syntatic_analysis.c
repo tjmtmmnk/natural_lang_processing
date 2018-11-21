@@ -634,6 +634,11 @@ static int parseState() {
             }
             break;
         }
+        default:
+            if (parseEmptyState() == ERROR) {
+                return ERROR;
+            }
+            break;
     }
     return OK;
 }
@@ -697,10 +702,7 @@ static int parseAddOperator() {
     return OK;
 }
 
-static int parseEmptyState() { //TODO : 空文にならない条件の実装
-    if (token == TNAME || token == TIF || token == TWHILE) {
-        return errorWithReturn(getLineNum(), "Empty is not found");
-    }
+static int parseEmptyState() {
     token = scanTokenOneEach();
     return OK;
 }
@@ -750,7 +752,6 @@ int parseProgram() {
     if (parseBlock() == ERROR) {
         return ERROR;
     }
-    token = scanTokenOneEach();
 
     if (token != TDOT) {
         return errorWithReturn(getLineNum(), "'.' is not found");
