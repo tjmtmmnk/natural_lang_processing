@@ -57,7 +57,6 @@ static int parseStandardType() {
         return OK;
     }
     return errorWithReturn(getLineNum(), "'standard type' is not found");
-
 }
 
 static int parseArrayType() {
@@ -86,24 +85,21 @@ static int parseArrayType() {
     }
     token = scanTokenOneEach();
 
-    if (parseStandardType() == ERROR) {
-        return ERROR;
-    }
+    if (parseStandardType() == ERROR) { return ERROR; }
     return OK;
 }
 
 static int parseType() {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR || token == TARRAY) {
         if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-            if (parseStandardType() == ERROR) {
-                return ERROR;
-            }
+            if (parseStandardType() == ERROR) { return ERROR; }
+
             if (token == TARRAY) {
-                if (parseArrayType() == ERROR) {
-                    return ERROR;
-                }
+                if (parseArrayType() == ERROR) { return ERROR; }
             }
         }
+    } else {
+        return errorWithReturn(getLineNum(), "type error");
     }
     return OK;
 }
@@ -117,37 +113,30 @@ static int parseName() {
 }
 
 static int parseVarNames() {
-    if (parseName() == ERROR) {
-        return ERROR;
-    }
+    if (parseName() == ERROR) { return ERROR; }
+
     while (token == TCOMMA) {
         token = scanTokenOneEach();
 
-        if (parseName() == ERROR) {
-            return ERROR;
-        }
+        if (parseName() == ERROR) { return ERROR; }
     }
     return OK;
 }
 
 static int parseVarDecler() {
-    if (token != TVAR) {
-        return errorWithReturn(getLineNum(), "'var' is not found");
-    }
     token = scanTokenOneEach();
 
-    if (parseVarNames() == ERROR) {
-        return ERROR;
+    if (token != TNAME) {
+        return errorWithReturn(getLineNum(), "'NAME' is not found");
     }
+    if (parseVarNames() == ERROR) { return ERROR; }
 
     if (token != TCOLON) {
         return errorWithReturn(getLineNum(), "':' is not found");
     }
     token = scanTokenOneEach();
 
-    if (parseType() == ERROR) {
-        return ERROR;
-    }
+    if (parseType() == ERROR) { return ERROR; }
 
     if (token != TSEMI) {
         return errorWithReturn(getLineNum(), "';' is not found");
@@ -155,18 +144,14 @@ static int parseVarDecler() {
     token = scanTokenOneEach();
 
     while (token == TNAME) {
-        if (parseVarNames() == ERROR) {
-            return ERROR;
-        }
+        if (parseVarNames() == ERROR) { return ERROR; }
 
         if (token != TCOLON) {
             return errorWithReturn(getLineNum(), "':' is not found");
         }
         token = scanTokenOneEach();
 
-        if (parseType() == ERROR) {
-            return ERROR;
-        }
+        if (parseType() == ERROR) { return ERROR; }
 
         if (token != TSEMI) {
             return errorWithReturn(getLineNum(), "';' is not found");
@@ -181,39 +166,28 @@ static int parseVarDecler() {
 }
 
 static int parseFormalParam() {
-    if (token != TLPAREN) {
-        return errorWithReturn(getLineNum(), "'(' is not found");
-    }
     token = scanTokenOneEach();
 
-    if (parseVarNames() == ERROR) {
-        return ERROR;
-    }
+    if (parseVarNames() == ERROR) { return ERROR; }
 
     if (token != TCOLON) {
         return errorWithReturn(getLineNum(), "':' is not found");
     }
     token = scanTokenOneEach();
 
-    if (parseType() == ERROR) {
-        return ERROR;
-    }
+    if (parseType() == ERROR) { return ERROR; }
 
     while (token == TSEMI) {
         token = scanTokenOneEach();
 
-        if (parseVarNames() == ERROR) {
-            return ERROR;
-        }
+        if (parseVarNames() == ERROR) { return ERROR; }
 
         if (token != TCOLON) {
             return errorWithReturn(getLineNum(), "':' is not found");
         }
         token = scanTokenOneEach();
 
-        if (parseType() == ERROR) {
-            return ERROR;
-        }
+        if (parseType() == ERROR) { return ERROR; }
     }
 
     if (token != TRPAREN) {
@@ -224,15 +198,12 @@ static int parseFormalParam() {
 }
 
 static int parseTerm() {
-    if (parseFactor() == ERROR) {
-        return ERROR;
-    }
+    if (parseFactor() == ERROR) { return ERROR; }
+
     while (token == TSTAR || token == TDIV || token == TAND) {
         token = scanTokenOneEach(); //multi operator
 
-        if (parseFactor() == ERROR) {
-            return ERROR;
-        }
+        if (parseFactor() == ERROR) { return ERROR; }
     }
     return OK;
 }
@@ -242,28 +213,23 @@ static int parseSimpleExpression() {
         token = scanTokenOneEach();
     }
 
-    if (parseTerm() == ERROR) {
-        return ERROR;
-    }
+    if (parseTerm() == ERROR) { return ERROR; }
 
     while (token == TPLUS || token == TMINUS || token == TOR) {
         token = scanTokenOneEach(); //add operator
-        if (parseTerm() == ERROR) {
-            return ERROR;
-        }
+
+        if (parseTerm() == ERROR) { return ERROR; }
     }
     return OK;
 }
 
 static int parseExpression() {
-    if (parseSimpleExpression() == ERROR) {
-        return ERROR;
-    }
+    if (parseSimpleExpression() == ERROR) { return ERROR; }
+
     while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
         token = scanTokenOneEach(); //relational operator
-        if (parseSimpleExpression() == ERROR) {
-            return ERROR;
-        }
+
+        if (parseSimpleExpression() == ERROR) { return ERROR; }
     }
     return OK;
 }
@@ -271,9 +237,7 @@ static int parseExpression() {
 static int parseFactor() {
     switch (token) {
         case TNAME: {
-            if (parseVariable() == ERROR) {
-                return ERROR;
-            }
+            if (parseVariable() == ERROR) { return ERROR; }
             break;
         }
         case TNUMBER:
@@ -285,9 +249,9 @@ static int parseFactor() {
         }
         case TLPAREN: {
             token = scanTokenOneEach();
-            if (parseExpression() == ERROR) {
-                return ERROR;
-            }
+
+            if (parseExpression() == ERROR) { return ERROR; }
+
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
             }
@@ -296,22 +260,21 @@ static int parseFactor() {
         }
         case TNOT: {
             token = scanTokenOneEach();
-            if (parseFactor() == ERROR) {
-                return ERROR;
-            }
+            if (parseFactor() == ERROR) { return ERROR; }
             break;
         }
         case TINTEGER:
         case TBOOLEAN:
         case TCHAR: {
             token = scanTokenOneEach();
+
             if (token != TLPAREN) {
                 return errorWithReturn(getLineNum(), "'(' is not found");
             }
             token = scanTokenOneEach();
-            if (parseExpression() == ERROR) {
-                return ERROR;
-            }
+
+            if (parseExpression() == ERROR) { return ERROR; }
+
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
             }
@@ -323,47 +286,33 @@ static int parseFactor() {
 }
 
 static int parseConditionState() {
-    if (token != TIF) {
-        return errorWithReturn(getLineNum(), "'if' is not found");
-    }
     token = scanTokenOneEach();
 
-    if (parseExpression() == ERROR) {
-        return ERROR;
-    }
+    if (parseExpression() == ERROR) { return ERROR; }
 
     if (token != TTHEN) {
         return errorWithReturn(getLineNum(), "'then' is not found");
     }
     token = scanTokenOneEach();
 
-    if (parseState() == ERROR) {
-        return ERROR;
-    }
+    if (parseState() == ERROR) { return ERROR; }
 
     if (token == TELSE) {
         token = scanTokenOneEach();
 
-        if (parseState() == ERROR) {
-            return ERROR;
-        }
+        if (parseState() == ERROR) { return ERROR; }
     }
     return OK;
 }
 
 
 static int parseSubProgramDecler() {
-    if (token == TPROCEDURE) {
-        token = scanTokenOneEach();
-    } else {
-        return errorWithReturn(getLineNum(), "'procedure' is not found");
-    }
-    if (parseName() == ERROR) {
-        return ERROR;
-    }
+    token = scanTokenOneEach();
 
-    if (parseFormalParam() == ERROR) {
-        return ERROR;
+    if (parseName() == ERROR) { return ERROR; }
+
+    if (token == TLPAREN) {
+        if (parseFormalParam() == ERROR) { return ERROR; }
     }
 
     if (token != TSEMI) {
@@ -371,13 +320,14 @@ static int parseSubProgramDecler() {
     }
     token = scanTokenOneEach();
 
-    if (parseVarDecler() == ERROR) {
-        return ERROR;
+    if (token == TVAR) {
+        if (parseVarDecler() == ERROR) { return ERROR; }
     }
 
-    if (parseCompoundState() == ERROR) {
-        return ERROR;
+    if (token != TBEGIN) {
+        return errorWithReturn(getLineNum(), "'begin' is not found");
     }
+    if (parseCompoundState() == ERROR) { return ERROR; }
 
     if (token != TSEMI) {
         return errorWithReturn(getLineNum(), "';' is not found");
@@ -387,37 +337,29 @@ static int parseSubProgramDecler() {
 }
 
 static int parseIterationState() {
-    if (token != TWHILE) {
-        return errorWithReturn(getLineNum(), "'while' is not found");
-    }
     token = scanTokenOneEach();
 
-    if (parseExpression() == ERROR) {
-        return ERROR;
-    }
+    if (parseExpression() == ERROR) { return ERROR; }
 
     if (token != TDO) {
         return errorWithReturn(getLineNum(), "'do' is not found");
     }
     token = scanTokenOneEach();
 
-    if (parseState() == ERROR) {
-        return ERROR;
-    }
+    if (parseState() == ERROR) { return ERROR; }
     return OK;
 }
 
 static int parseCallState() {
     token = scanTokenOneEach();
-    if (parseName() == ERROR) {
-        return ERROR;
-    }
+
+    if (parseName() == ERROR) { return ERROR; }
 
     if (token == TLPAREN) {
         token = scanTokenOneEach();
-        if (parseExpressions() == ERROR) {
-            return ERROR;
-        }
+
+        if (parseExpressions() == ERROR) { return ERROR; }
+
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
         }
@@ -427,30 +369,23 @@ static int parseCallState() {
 }
 
 static int parseExpressions() {
-    if (parseExpression() == ERROR) {
-        return ERROR;
-    }
+    if (parseExpression() == ERROR) { return ERROR; }
+
     while (token == TCOMMA) {
         token = scanTokenOneEach();
-        if (parseExpression() == ERROR) {
-            return ERROR;
-        }
+        if (parseExpression() == ERROR) { return ERROR; }
     }
     return OK;
 }
 
 static int parseAssignState() {
-    if (parseVariable() == ERROR) {
-        return ERROR;
-    }
+    if (parseVariable() == ERROR) { return ERROR; }
     if (token != TASSIGN) {
         return errorWithReturn(getLineNum(), "':=' is not found");
     }
     token = scanTokenOneEach();
 
-    if (parseExpression() == ERROR) {
-        return ERROR;
-    }
+    if (parseExpression() == ERROR) { return ERROR; }
     return OK;
 }
 
@@ -462,14 +397,12 @@ static int parseInputState() {
     }
     if (token == TLPAREN) {
         token = scanTokenOneEach();
-        if (parseVariable() == ERROR) {
-            return ERROR;
-        }
+
+        if (parseVariable() == ERROR) { return ERROR; }
+
         while (token == TCOMMA) {
             token = scanTokenOneEach();
-            if (parseVariable() == ERROR) {
-                return ERROR;
-            }
+            if (parseVariable() == ERROR) { return ERROR; }
         }
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
@@ -486,9 +419,8 @@ static int parseOutputFormat() {
         if (token == TSTRING) {
             token = scanTokenOneEach();
         } else {
-            if (parseExpression() == ERROR) {
-                return ERROR;
-            }
+            if (parseExpression() == ERROR) { return ERROR; }
+
             if (token == TCOLON) {
                 token = scanTokenOneEach();
                 if (token != TNUMBER) {
@@ -508,14 +440,12 @@ static int parseOutputState() {
     }
     if (token == TLPAREN) {
         token = scanTokenOneEach();
-        if (parseOutputFormat() == ERROR) {
-            return ERROR;
-        }
+
+        if (parseOutputFormat() == ERROR) { return ERROR; }
+
         while (token == TCOMMA) {
             token = scanTokenOneEach();
-            if (parseOutputFormat() == ERROR) {
-                return ERROR;
-            }
+            if (parseOutputFormat() == ERROR) { return ERROR; }
         }
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
@@ -528,21 +458,15 @@ static int parseOutputState() {
 static int parseState() {
     switch (token) {
         case TNAME: {
-            if (parseAssignState() == ERROR) {
-                return ERROR;
-            }
+            if (parseAssignState() == ERROR) { return ERROR; }
             break;
         }
         case TIF: {
-            if (parseConditionState() == ERROR) {
-                return ERROR;
-            }
+            if (parseConditionState() == ERROR) { return ERROR; }
             break;
         }
         case TWHILE: {
-            if (parseIterationState() == ERROR) {
-                return ERROR;
-            }
+            if (parseIterationState() == ERROR) { return ERROR; }
             break;
         }
         case TBREAK: {
@@ -550,9 +474,7 @@ static int parseState() {
             break;
         }
         case TCALL: {
-            if (parseCallState() == ERROR) {
-                return ERROR;
-            }
+            if (parseCallState() == ERROR) { return ERROR; }
             break;
         }
         case TRETURN:
@@ -560,22 +482,16 @@ static int parseState() {
             break;
         case TREAD:
         case TREADLN: {
-            if (parseInputState() == ERROR) {
-                return ERROR;
-            }
+            if (parseInputState() == ERROR) { return ERROR; }
             break;
         }
         case TWRITE:
         case TWRITELN: {
-            if (parseOutputState() == ERROR) {
-                return ERROR;
-            }
+            if (parseOutputState() == ERROR) { return ERROR; }
             break;
         }
         case TBEGIN: {
-            if (parseCompoundState() == ERROR) {
-                return ERROR;
-            }
+            if (parseCompoundState() == ERROR) { return ERROR; }
             break;
         }
         default:
@@ -586,23 +502,15 @@ static int parseState() {
 }
 
 static int parseCompoundState() {
-    if (token != TBEGIN) {
-        return errorWithReturn(getLineNum(), "'begin' is not found");
-    }
     token = scanTokenOneEach();
 
-    if (parseState() == ERROR) {
-        return ERROR;
-    }
+    if (parseState() == ERROR) { return ERROR; }
 
     while (token == TSEMI) {
         token = scanTokenOneEach();
-        if (parseState() == ERROR) {
-            return ERROR;
-        }
+        if (parseState() == ERROR) { return ERROR; }
     }
     if (token != TEND) {
-        printf("%s\n", token_str[token]);
         return errorWithReturn(getLineNum(), "'end' is not found");
     }
     token = scanTokenOneEach();
@@ -611,14 +519,11 @@ static int parseCompoundState() {
 
 // equal to "left part"
 static int parseVariable() {
-    if (parseName() == ERROR) {
-        return ERROR;
-    }
+    if (parseName() == ERROR) { return ERROR; }
+
     if (token == TLSQPAREN) {
         token = scanTokenOneEach();
-        if (parseExpression() == ERROR) {
-            return ERROR;
-        }
+        if (parseExpression() == ERROR) { return ERROR; }
         if (token != TRSQPAREN) {
             return errorWithReturn(getLineNum(), "']' is not found");
         }
@@ -627,22 +532,20 @@ static int parseVariable() {
     return OK;
 }
 
+//ok
 static int parseBlock() {
     while (token == TVAR || token == TPROCEDURE) {
         if (token == TVAR) {
-            if (parseVarDecler() == ERROR) {
-                return ERROR;
-            }
+            if (parseVarDecler() == ERROR) { return ERROR; }
         }
         if (token == TPROCEDURE) {
-            if (parseSubProgramDecler() == ERROR) {
-                return ERROR;
-            }
+            if (parseSubProgramDecler() == ERROR) { return ERROR; }
         }
     }
-    if (parseCompoundState() == ERROR) {
-        return ERROR;
+    if (token != TBEGIN) {
+        return errorWithReturn(getLineNum(), "'begin' is not found");
     }
+    if (parseCompoundState() == ERROR) { return ERROR; }
     return OK;
 }
 
@@ -665,9 +568,7 @@ int parseProgram() {
     }
     token = scanTokenOneEach();
 
-    if (parseBlock() == ERROR) {
-        return ERROR;
-    }
+    if (parseBlock() == ERROR) { return ERROR; }
 
     if (token != TDOT) {
         return errorWithReturn(getLineNum(), "'.' is not found");
