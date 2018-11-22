@@ -231,6 +231,33 @@ my_lib/lexical_analysis.c.s:
 	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/lexical_analysis.c.s
 .PHONY : my_lib/lexical_analysis.c.s
 
+my_lib/syntatic_analysis.o: my_lib/syntatic_analysis.c.o
+
+.PHONY : my_lib/syntatic_analysis.o
+
+# target to build an object file
+my_lib/syntatic_analysis.c.o:
+	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/syntatic_analysis.c.o
+.PHONY : my_lib/syntatic_analysis.c.o
+
+my_lib/syntatic_analysis.i: my_lib/syntatic_analysis.c.i
+
+.PHONY : my_lib/syntatic_analysis.i
+
+# target to preprocess a source file
+my_lib/syntatic_analysis.c.i:
+	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/syntatic_analysis.c.i
+.PHONY : my_lib/syntatic_analysis.c.i
+
+my_lib/syntatic_analysis.s: my_lib/syntatic_analysis.c.s
+
+.PHONY : my_lib/syntatic_analysis.s
+
+# target to generate assembly for a file
+my_lib/syntatic_analysis.c.s:
+	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/syntatic_analysis.c.s
+.PHONY : my_lib/syntatic_analysis.c.s
+
 my_lib/token_list.o: my_lib/token_list.c.o
 
 .PHONY : my_lib/token_list.o
@@ -279,6 +306,9 @@ help:
 	@echo "... my_lib/lexical_analysis.o"
 	@echo "... my_lib/lexical_analysis.i"
 	@echo "... my_lib/lexical_analysis.s"
+	@echo "... my_lib/syntatic_analysis.o"
+	@echo "... my_lib/syntatic_analysis.i"
+	@echo "... my_lib/syntatic_analysis.s"
 	@echo "... my_lib/token_list.o"
 	@echo "... my_lib/token_list.i"
 	@echo "... my_lib/token_list.s"

@@ -21,6 +21,8 @@ extern void debugIDTable();
 // @return : token_code
 extern int scanTokenOneEach();
 
+extern int getLineNum();
+
 extern int num_attr;
 extern char str_attr[MAX_WORD_LENGTH];
 

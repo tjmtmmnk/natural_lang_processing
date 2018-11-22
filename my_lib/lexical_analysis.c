@@ -123,10 +123,6 @@ static void lineCountUp() {
     }
 }
 
-static int getLineNum() {
-    return line_num;
-}
-
 static void clearBuf() {
     rep(i, 0, MAX_WORD_LENGTH) {
         str_attr[i] = '\0';
@@ -162,6 +158,10 @@ static Mode getMode(int _crnt_buf, int _c_buf) {
         error(getLineNum(), "Invalid word");
     }
     return MODE_NONE;
+}
+
+int getLineNum() {
+    return line_num;
 }
 
 void setFileName(char *_file_name) {
@@ -200,6 +200,7 @@ int scanTokenOneEach() {
      * process in each mode
      */
     while (crnt_buf != EOF || c_buf != EOF) {
+        int is_ok = 1;
         mode = getMode(crnt_buf, c_buf);
 
         switch (mode) {
@@ -263,7 +264,8 @@ int scanTokenOneEach() {
             case MODE_SPLIT:
                 lineCountUp();
                 updateBuf(1);
-                return NONE;
+                is_ok = 0;
+                break;
 
             case MODE_COMMENT_SLASH:
                 updateBuf(2); //get into comment
@@ -278,7 +280,8 @@ int scanTokenOneEach() {
                     updateBuf(1);
                 }
                 updateBuf(2); //get out comment
-                return NONE;
+                is_ok = 0;
+                break;
 
             case MODE_COMMENT_BRACE:
                 updateBuf(1);
@@ -293,22 +296,26 @@ int scanTokenOneEach() {
                     updateBuf(1);
                 }
                 updateBuf(1);
-                return NONE;
+                is_ok = 0;
+                break;
             default:
                 break;
 
         }
-        if (buf_i == 0) {
-            updateBuf(1);
+
+        if (is_ok) {
+
+            if (buf_i == 0) {
+                updateBuf(1);
+            }
+
+            if (buf_i > (MAX_WORD_LENGTH - 1)) {
+                error(getLineNum(), "Too long words");
+            }
+            token_code = getTokenCode();
+            clearBuf();
+
         }
-
-        if (buf_i > (MAX_WORD_LENGTH - 1)) {
-            error(getLineNum(), "Too long words");
-        }
-
-        token_code = getTokenCode();
-        clearBuf();
-
         if (token_code > 0) {
             return token_code;
         }
