@@ -22,7 +22,7 @@ extern void debugIDTable();
 extern int scanTokenOneEach();
 
 extern int getLineNum();
-
+extern char* getStrAttr();
 extern int num_attr;
 extern char str_attr[MAX_WORD_LENGTH];
 
