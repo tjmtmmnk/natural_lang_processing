@@ -331,6 +331,9 @@ static int parseConditionState() {
 
     if (parseState() == ERROR) { return ERROR; }
 
+    if (token != TELSE) {
+        tab_num--;
+    }
     if (token == TELSE) {
         tab_num--;
         printWithTub("else\n", tab_num, FALSE);
@@ -617,9 +620,7 @@ static int parseCompoundState() {
 
         int i = 0;
         while (token == TSEMI) {
-            if (is_once) {
-                printf(";\n");
-            }
+            printf(";\n");
             token = scanTokenOneEach();
             if (parseState() == ERROR) { return ERROR; }
             i = 1;
@@ -633,13 +634,12 @@ static int parseCompoundState() {
         if (token != TEND) {
             return errorWithReturn(getLineNum(), "'end' is not found");
         }
+        const int bef_token = token;
         tab_num--;
         printWithTub("end", tab_num, FALSE);
         token = scanTokenOneEach();
 
-        if (token == TSEMI) {
-            printf(";\n");
-        } else if (token != TDOT && !i) {
+        if (bef_token == TEND && token != TDOT && token != TSEMI) {
             printf("\n");
         }
         is_once = FALSE;
