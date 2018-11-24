@@ -283,6 +283,7 @@ static int parseFactor() {
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
             }
+            printf(")");
             token = scanTokenOneEach();
             break;
         }
@@ -324,19 +325,20 @@ static int parseConditionState() {
     if (token != TTHEN) {
         return errorWithReturn(getLineNum(), "'then' is not found");
     }
-    printf(" then \n");
+    printf(" then\n");
     token = scanTokenOneEach();
     tab_num++;
 
     if (parseState() == ERROR) { return ERROR; }
 
     if (token == TELSE) {
-        printf("else ");
+        tab_num--;
+        printWithTub("else\n", tab_num, FALSE);
+        tab_num++;
         token = scanTokenOneEach();
-
         if (parseState() == ERROR) { return ERROR; }
+        tab_num--;
     }
-    tab_num--;
     return OK;
 }
 
@@ -605,6 +607,7 @@ static int parseState() {
 static int parseCompoundState() {
     static int is_once = TRUE;
     is_once = TRUE;
+
     if (token == TBEGIN) {
         printWithTub("begin\n", tab_num, FALSE);
         token = scanTokenOneEach();
@@ -612,13 +615,18 @@ static int parseCompoundState() {
 
         if (parseState() == ERROR) { return ERROR; }
 
+        int i = 0;
         while (token == TSEMI) {
-            printWithTub(";\n", 0, FALSE);
+            if (is_once) {
+                printf(";\n");
+            }
             token = scanTokenOneEach();
             if (parseState() == ERROR) { return ERROR; }
+            i = 1;
         }
-
-        if(is_once){ //Avoid two or more iterations '\n' by recursion
+        if (is_once) { //Avoid two or more iterations '\n' by recursion
+            printf("\n");
+        } else if (i) {
             printf("\n");
         }
 
@@ -628,9 +636,10 @@ static int parseCompoundState() {
         tab_num--;
         printWithTub("end", tab_num, FALSE);
         token = scanTokenOneEach();
+
         if (token == TSEMI) {
             printf(";\n");
-        } else if (token != TDOT) {
+        } else if (token != TDOT && !i) {
             printf("\n");
         }
         is_once = FALSE;
