@@ -153,6 +153,7 @@ static int parseVarNames() {
 
 static int parseVarDecler() {
     if (token == TVAR) {
+        printWithTub("var", tab_num, TRUE);
         token = scanTokenOneEach();
 
         if (parseVarNames() == ERROR) { return ERROR; }
@@ -198,6 +199,7 @@ static int parseVarDecler() {
 static int parseFormalParam() {
     if (token == TLPAREN) {
         token = scanTokenOneEach();
+        printf("(");
 
         if (parseVarNames() == ERROR) { return ERROR; }
         printf(" ");
@@ -205,19 +207,21 @@ static int parseFormalParam() {
         if (token != TCOLON) {
             return errorWithReturn(getLineNum(), "':' is not found");
         }
+        printf(": ");
         token = scanTokenOneEach();
 
         if (parseType() == ERROR) { return ERROR; }
 
         while (token == TSEMI) {
             token = scanTokenOneEach();
+            printf("; ");
 
             if (parseVarNames() == ERROR) { return ERROR; }
-            printf(" ");
 
             if (token != TCOLON) {
                 return errorWithReturn(getLineNum(), "':' is not found");
             }
+            printf(" : ");
             token = scanTokenOneEach();
 
             if (parseType() == ERROR) { return ERROR; }
@@ -226,6 +230,7 @@ static int parseFormalParam() {
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
         }
+        printf(")");
         token = scanTokenOneEach();
         return OK;
     }
@@ -239,6 +244,8 @@ static int parseTerm() {
         if (parseFactor() == ERROR) { return ERROR; }
 
         while (token == TSTAR || token == TDIV || token == TAND) {
+            printf(" ");
+            printWithTub(token_str[token], 0, TRUE);
             token = scanTokenOneEach(); //multi operator
 
             if (parseFactor() == ERROR) { return ERROR; }
@@ -309,6 +316,7 @@ static int parseFactor() {
 }
 
 static int parseConditionState() {
+    printf(" ");
     token = scanTokenOneEach();
 
     if (parseExpression() == ERROR) { return ERROR; }
@@ -316,20 +324,25 @@ static int parseConditionState() {
     if (token != TTHEN) {
         return errorWithReturn(getLineNum(), "'then' is not found");
     }
+    printf(" then \n");
     token = scanTokenOneEach();
+    tab_num++;
 
     if (parseState() == ERROR) { return ERROR; }
 
     if (token == TELSE) {
+        printf("else ");
         token = scanTokenOneEach();
 
         if (parseState() == ERROR) { return ERROR; }
     }
+    tab_num--;
     return OK;
 }
 
 static int parseSubProgramDecler() {
     if (token == TPROCEDURE) {
+        printWithTub("procedure", tab_num, TRUE);
         token = scanTokenOneEach();
 
         if (parseName() == ERROR) { return ERROR; }
@@ -341,6 +354,7 @@ static int parseSubProgramDecler() {
         if (token != TSEMI) {
             return errorWithReturn(getLineNum(), "';' is not found");
         }
+        printf(";\n");
         token = scanTokenOneEach();
 
         if (token == TVAR) {
@@ -406,6 +420,7 @@ static int parseExpressions() {
         if (parseExpression() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
+            printf(", ");
             token = scanTokenOneEach();
             if (parseExpression() == ERROR) { return ERROR; }
         }
@@ -432,11 +447,13 @@ static int parseIterationState() {
 }
 
 static int parseCallState() {
+    printf(" ");
     token = scanTokenOneEach();
 
     if (parseName() == ERROR) { return ERROR; }
 
     if (token == TLPAREN) {
+        printf("(");
         token = scanTokenOneEach();
 
         if (parseExpressions() == ERROR) { return ERROR; }
@@ -444,6 +461,7 @@ static int parseCallState() {
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
         }
+        printf(")");
         token = scanTokenOneEach();
     }
     return OK;
@@ -585,6 +603,8 @@ static int parseState() {
 }
 
 static int parseCompoundState() {
+    static int is_once = TRUE;
+    is_once = TRUE;
     if (token == TBEGIN) {
         printWithTub("begin\n", tab_num, FALSE);
         token = scanTokenOneEach();
@@ -597,7 +617,10 @@ static int parseCompoundState() {
             token = scanTokenOneEach();
             if (parseState() == ERROR) { return ERROR; }
         }
-        printf("\n");
+
+        if(is_once){ //Avoid two or more iterations '\n' by recursion
+            printf("\n");
+        }
 
         if (token != TEND) {
             return errorWithReturn(getLineNum(), "'end' is not found");
@@ -605,6 +628,12 @@ static int parseCompoundState() {
         tab_num--;
         printWithTub("end", tab_num, FALSE);
         token = scanTokenOneEach();
+        if (token == TSEMI) {
+            printf(";\n");
+        } else if (token != TDOT) {
+            printf("\n");
+        }
+        is_once = FALSE;
         return OK;
     }
     return errorWithReturn(getLineNum(), "'begin' is not found");
@@ -631,7 +660,6 @@ static int parseVariable() {
 static int parseBlock() {
     if (token == TVAR || token == TPROCEDURE || token == TBEGIN) {
         while (token == TVAR || token == TPROCEDURE) {
-            printWithTub(token_str[token], 1, 1);
             if (token == TVAR) {
                 if (parseVarDecler() == ERROR) { return ERROR; }
             }
@@ -671,11 +699,12 @@ int parseProgram() {
     printWithTub(";\n", 0, FALSE);
     token = scanTokenOneEach();
 
+    tab_num++;
     if (parseBlock() == ERROR) { return ERROR; }
 
     if (token != TDOT) {
         return errorWithReturn(getLineNum(), "'.' is not found");
     }
-    printf(".");
+    printf(".\n");
     return OK;
 }
