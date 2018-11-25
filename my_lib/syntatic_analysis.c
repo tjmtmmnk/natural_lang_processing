@@ -371,6 +371,7 @@ static int parseSubProgramDecler() {
         if (token != TSEMI) {
             return errorWithReturn(getLineNum(), "';' is not found");
         }
+        printf(";\n");
         token = scanTokenOneEach();
         return OK;
     }
@@ -608,9 +609,6 @@ static int parseState() {
 }
 
 static int parseCompoundState() {
-    static int is_once = TRUE;
-    is_once = TRUE;
-
     if (token == TBEGIN) {
         printWithTub("begin\n", tab_num, FALSE);
         token = scanTokenOneEach();
@@ -618,31 +616,26 @@ static int parseCompoundState() {
 
         if (parseState() == ERROR) { return ERROR; }
 
-        int i = 0;
         while (token == TSEMI) {
             printf(";\n");
             token = scanTokenOneEach();
             if (parseState() == ERROR) { return ERROR; }
-            i = 1;
         }
-        if (is_once) { //Avoid two or more iterations '\n' by recursion
-            printf("\n");
-        } else if (i) {
+
+        if (token == TEND) {
             printf("\n");
         }
 
         if (token != TEND) {
             return errorWithReturn(getLineNum(), "'end' is not found");
         }
-        const int bef_token = token;
+
         tab_num--;
         printWithTub("end", tab_num, FALSE);
         token = scanTokenOneEach();
-
-        if (bef_token == TEND && token != TDOT && token != TSEMI) {
+        if (token != TSEMI && token != TDOT && token != TEND) {
             printf("\n");
         }
-        is_once = FALSE;
         return OK;
     }
     return errorWithReturn(getLineNum(), "'begin' is not found");
@@ -680,6 +673,7 @@ static int parseBlock() {
             return errorWithReturn(getLineNum(), "'begin' is not found");
         }
         if (parseCompoundState() == ERROR) { return ERROR; }
+
         return OK;
     }
     return errorWithReturn(getLineNum(), "unexpected beginning character in block");
