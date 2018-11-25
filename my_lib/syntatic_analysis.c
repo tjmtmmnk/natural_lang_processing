@@ -138,7 +138,10 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
+        tab_num++;
+        printWithTub("", tab_num, FALSE);
         if (parseName() == ERROR) { return ERROR; }
+
 
         while (token == TCOMMA) {
             printf(", ");
@@ -146,6 +149,7 @@ static int parseVarNames() {
 
             if (parseName() == ERROR) { return ERROR; }
         }
+        tab_num--;
         return OK;
     }
     return errorWithReturn(getLineNum(), "'var name' is not found");
@@ -153,7 +157,7 @@ static int parseVarNames() {
 
 static int parseVarDecler() {
     if (token == TVAR) {
-        printWithTub("var", tab_num, TRUE);
+        printWithTub("var\n", tab_num, FALSE);
         token = scanTokenOneEach();
 
         if (parseVarNames() == ERROR) { return ERROR; }
@@ -335,6 +339,7 @@ static int parseConditionState() {
         tab_num--;
     }
     if (token == TELSE) {
+        printf("\n");
         tab_num--;
         printWithTub("else\n", tab_num, FALSE);
         tab_num++;
@@ -372,6 +377,7 @@ static int parseSubProgramDecler() {
             return errorWithReturn(getLineNum(), "';' is not found");
         }
         printf(";\n");
+
         token = scanTokenOneEach();
         return OK;
     }
@@ -633,9 +639,6 @@ static int parseCompoundState() {
         tab_num--;
         printWithTub("end", tab_num, FALSE);
         token = scanTokenOneEach();
-        if (token != TSEMI && token != TDOT && token != TEND) {
-            printf("\n");
-        }
         return OK;
     }
     return errorWithReturn(getLineNum(), "'begin' is not found");

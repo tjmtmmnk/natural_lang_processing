@@ -13,7 +13,9 @@ int main(int nc, char *np[]) {
 
     setFileName(np[1]);
     initScan();
-    parseProgram();
+    if(parseProgram() == OK){
+        printf("\n!!!No Parse Error!!!\n");
+    }
 
 //    int token_code;
 //    while ((token_code = scanTokenOneEach()) != SCAN_END) {
