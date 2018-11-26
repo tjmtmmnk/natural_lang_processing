@@ -155,13 +155,16 @@ static Mode getMode(int _crnt_buf, int _c_buf) {
     } else if (isCommentBrace(_crnt_buf)) {
         return MODE_COMMENT_BRACE;
     } else {
-        error(getLineNum(), "Invalid word");
+        return MODE_NONE;
     }
-    return MODE_NONE;
 }
 
 int getLineNum() {
     return line_num;
+}
+
+char *getStrAttr() {
+    return str_attr;
 }
 
 void setFileName(char *_file_name) {
@@ -193,6 +196,7 @@ void closeFile() {
  */
 
 int scanTokenOneEach() {
+    clearBuf();
     Mode mode = MODE_NONE;
     int token_code = SCAN_END;
     int buf_i = 0;
@@ -244,20 +248,18 @@ int scanTokenOneEach() {
                         if (buf_i > (MAX_WORD_LENGTH - 1)) {
                             error(getLineNum(), "Too long words in string");
                         }
-
                         updateBuf(1);
-
                         return TSTRING;
                     } else if (isString(crnt_buf) && isString(c_buf)) { // correspond to ''' in string
+                        str_attr[buf_i] = str_attr[buf_i + 1] = '\'';
                         updateBuf(2);
                         buf_i += 2; //count apostrophes one by one
                     } else {
                         if (crnt_buf == '\r' || crnt_buf == '\n') {
                             error(getLineNum(), "Can't contain new line character in string");
                         }
-
+                        str_attr[buf_i++] = crnt_buf;
                         updateBuf(1);
-                        buf_i++;
                     }
                 }
 
@@ -299,12 +301,10 @@ int scanTokenOneEach() {
                 is_ok = 0;
                 break;
             default:
-                break;
-
+                return error(getLineNum(), "Invalid Word");
         }
 
         if (is_ok) {
-
             if (buf_i == 0) {
                 updateBuf(1);
             }
@@ -313,8 +313,6 @@ int scanTokenOneEach() {
                 error(getLineNum(), "Too long words");
             }
             token_code = getTokenCode();
-            clearBuf();
-
         }
         if (token_code > 0) {
             return token_code;

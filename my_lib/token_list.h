@@ -13,7 +13,7 @@
 
 /* Token */
 typedef enum e_name {
-    NONE = -2,
+    NONE = -1,
     TNAME = 1
 } eName;
 
