@@ -6,6 +6,8 @@
 
 static int token;
 static int tab_num;
+static int cnt_iteration, cnt_break;
+static int while_nest;
 
 static int parseStandardType();
 
@@ -293,6 +295,7 @@ static int parseFactor() {
             break;
         }
         case TNOT: {
+            printf(" ");
             token = scanTokenOneEach();
             if (parseFactor() == ERROR) { return ERROR; }
             break;
@@ -458,7 +461,6 @@ static int parseIterationState() {
     }
     printWithTub("do\n", 0, FALSE);
     token = scanTokenOneEach();
-
     if (parseState() == ERROR) { return ERROR; }
     return OK;
 }
@@ -584,10 +586,17 @@ static int parseState() {
             break;
         }
         case TWHILE: {
+            cnt_iteration++;
+            while_nest++;
             if (parseIterationState() == ERROR) { return ERROR; }
+            while_nest--;
             break;
         }
         case TBREAK: {
+            if (while_nest > 0) {
+                cnt_break++;
+            }
+
             token = scanTokenOneEach(); //parse break
             break;
         }
@@ -612,11 +621,9 @@ static int parseState() {
             if (parseCompoundState() == ERROR) { return ERROR; }
             break;
         }
-        case TSEMI:
+        default:
             token = scanTokenOneEach(); //empty state
             break;
-        default:
-            return errorWithReturn(getLineNum(), "state error");
     }
     return OK;
 }
@@ -657,11 +664,13 @@ static int parseVariable() {
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLSQPAREN) {
+            printf("[");
             token = scanTokenOneEach();
             if (parseExpression() == ERROR) { return ERROR; }
             if (token != TRSQPAREN) {
                 return errorWithReturn(getLineNum(), "']' is not found");
             }
+            printf("]");
             token = scanTokenOneEach();
         }
         return OK;
@@ -693,6 +702,9 @@ static int parseBlock() {
 int parseProgram() {
     token = scanTokenOneEach();
     tab_num = 0;
+    cnt_iteration = 0;
+    cnt_break = 0;
+    while_nest = 0;
 
     if (token != TPROGRAM) {
         return errorWithReturn(getLineNum(), "'program' is not found");
@@ -719,5 +731,10 @@ int parseProgram() {
         return errorWithReturn(getLineNum(), "'.' is not found");
     }
     printf(".\n");
+
+    if (cnt_iteration > 0 && cnt_break == 0) {
+        fprintf(stderr, "'break' must be included at least one in iteration statement\n");
+        return ERROR;
+    }
     return OK;
 }
