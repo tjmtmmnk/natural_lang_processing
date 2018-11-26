@@ -5,7 +5,6 @@
 #define FALSE 0
 
 static int token;
-
 static int tab_num;
 
 static int parseStandardType();
@@ -138,10 +137,7 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        tab_num++;
-        printWithTub("", tab_num, FALSE);
         if (parseName() == ERROR) { return ERROR; }
-
 
         while (token == TCOMMA) {
             printf(", ");
@@ -149,7 +145,7 @@ static int parseVarNames() {
 
             if (parseName() == ERROR) { return ERROR; }
         }
-        tab_num--;
+
         return OK;
     }
     return errorWithReturn(getLineNum(), "'var name' is not found");
@@ -160,8 +156,10 @@ static int parseVarDecler() {
         printWithTub("var\n", tab_num, FALSE);
         token = scanTokenOneEach();
 
+        tab_num++;
+        printWithTub("", tab_num, FALSE);
         if (parseVarNames() == ERROR) { return ERROR; }
-        printf(" ");
+        tab_num--;
 
         if (token != TCOLON) {
             return errorWithReturn(getLineNum(), "':' is not found");
@@ -178,7 +176,10 @@ static int parseVarDecler() {
         token = scanTokenOneEach();
 
         while (token == TNAME) {
+            tab_num++;
+            printWithTub("", tab_num, FALSE);
             if (parseVarNames() == ERROR) { return ERROR; }
+            tab_num--;
 
             if (token != TCOLON) {
                 return errorWithReturn(getLineNum(), "':' is not found");
@@ -413,6 +414,9 @@ static int parseExpression() {
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS || token == TSTRING) {
         if (parseSimpleExpression() == ERROR) { return ERROR; }
+        if (token == NONE) {
+            return errorWithReturn(getLineNum(), "expression error");
+        }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
             printf(" ");
@@ -421,8 +425,9 @@ static int parseExpression() {
             if (parseSimpleExpression() == ERROR) { return ERROR; }
         }
         return OK;
+    } else {
+        return errorWithReturn(getLineNum(), "expression error");
     }
-    return errorWithReturn(getLineNum(), "expression error");
 }
 
 static int parseExpressions() {
@@ -607,9 +612,11 @@ static int parseState() {
             if (parseCompoundState() == ERROR) { return ERROR; }
             break;
         }
-        default:
+        case TSEMI:
             token = scanTokenOneEach(); //empty state
             break;
+        default:
+            return errorWithReturn(getLineNum(), "state error");
     }
     return OK;
 }

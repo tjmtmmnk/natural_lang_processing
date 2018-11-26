@@ -155,9 +155,8 @@ static Mode getMode(int _crnt_buf, int _c_buf) {
     } else if (isCommentBrace(_crnt_buf)) {
         return MODE_COMMENT_BRACE;
     } else {
-        error(getLineNum(), "Invalid word");
+        return MODE_NONE;
     }
-    return MODE_NONE;
 }
 
 int getLineNum() {
@@ -302,8 +301,7 @@ int scanTokenOneEach() {
                 is_ok = 0;
                 break;
             default:
-                break;
-
+                return error(getLineNum(), "Invalid Word");
         }
 
         if (is_ok) {
