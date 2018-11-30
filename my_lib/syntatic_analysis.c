@@ -276,9 +276,15 @@ static int parseFactor() {
             token = scanTokenOneEach();
             break;
         }
-        case TNUMBER:
+        case TNUMBER: {
+            printf("%s", getStrAttr());
+            token = scanTokenOneEach();
+            break;
+        }
         case TSTRING: {
-            printWithTub(getStrAttr(), 0, FALSE);
+            printf("'");
+            printf("%s", getStrAttr());
+            printf("'");
             token = scanTokenOneEach();
             break;
         }
@@ -595,10 +601,9 @@ static int parseState() {
         case TBREAK: {
             if (while_nest > 0) {
                 cnt_break++;
-            } else if(while_nest == 0){
-                fprintf(stderr,"Can't include 'break' out of iteration state\n");
+            } else if (while_nest == 0) {
+                return errorWithReturn(getLineNum(), "Can't include 'break' out of iteration state");
             }
-
             token = scanTokenOneEach(); //parse break
             break;
         }
@@ -735,8 +740,9 @@ int parseProgram() {
     printf(".\n");
 
     if (cnt_iteration > 0 && cnt_break == 0) {
-        fprintf(stderr, "'break' must be included at least one in iteration statement\n");
+        fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
         return ERROR;
     }
+
     return OK;
 }
