@@ -222,7 +222,7 @@ int scanTokenOneEach() {
                 }
                 sscanf(str_attr, "%d", &num_attr);
                 if (num_attr > UNSIGNED_INT_MAX) {
-                    error(getLineNum(), "Over num range(0~32767)");
+                    return error(getLineNum(), "Over num range(0~32767)");
                 }
                 break;
 
@@ -241,12 +241,12 @@ int scanTokenOneEach() {
                 updateBuf(1); // get into '''
                 while (1) {
                     if (isEOF(crnt_buf)) {
-                        error(getLineNum(), "Don't close string");
+                        return error(getLineNum(), "Don't close string");
                     }
 
                     if (isString(crnt_buf) && !isString(c_buf)) {
                         if (buf_i > (MAX_WORD_LENGTH - 1)) {
-                            error(getLineNum(), "Too long words in string");
+                            return error(getLineNum(), "Too long words in string");
                         }
                         updateBuf(1);
                         return TSTRING;
@@ -256,7 +256,7 @@ int scanTokenOneEach() {
                         buf_i += 2; //count apostrophes one by one
                     } else {
                         if (crnt_buf == '\r' || crnt_buf == '\n') {
-                            error(getLineNum(), "Can't contain new line character in string");
+                            return error(getLineNum(), "Can't contain new line character in string");
                         }
                         str_attr[buf_i++] = crnt_buf;
                         updateBuf(1);
@@ -276,7 +276,7 @@ int scanTokenOneEach() {
                         break;
                     }
                     if (isEOF(crnt_buf)) {
-                        error(getLineNum(), "Don't close comment");
+                        return error(getLineNum(), "Don't close comment");
                     }
                     lineCountUp(); //count up line_num if there is new line character in comment
                     updateBuf(1);
@@ -292,7 +292,7 @@ int scanTokenOneEach() {
                         break;
                     }
                     if (isEOF(crnt_buf)) {
-                        error(getLineNum(), "Don't close comment");
+                        return error(getLineNum(), "Don't close comment");
                     }
                     lineCountUp();
                     updateBuf(1);
@@ -310,7 +310,7 @@ int scanTokenOneEach() {
             }
 
             if (buf_i > (MAX_WORD_LENGTH - 1)) {
-                error(getLineNum(), "Too long words");
+                return error(getLineNum(), "Too long words");
             }
             token_code = getTokenCode();
         }
