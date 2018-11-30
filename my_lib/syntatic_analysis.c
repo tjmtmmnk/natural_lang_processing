@@ -595,6 +595,8 @@ static int parseState() {
         case TBREAK: {
             if (while_nest > 0) {
                 cnt_break++;
+            } else if(while_nest == 0){
+                fprintf(stderr,"Can't include 'break' out of iteration state\n");
             }
 
             token = scanTokenOneEach(); //parse break
