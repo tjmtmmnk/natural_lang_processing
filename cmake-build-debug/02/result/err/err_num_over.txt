@@ -1,0 +1,4 @@
+program change;
+    var
+[ERROR] line2 : Over num range(0~32767)
+        x: array[

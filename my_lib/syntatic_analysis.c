@@ -322,6 +322,7 @@ static int parseFactor() {
             if (token != TLPAREN) {
                 return errorWithReturn(getLineNum(), "'(' is not found");
             }
+            printf("(");
             scanWithErrorJudge();
 
             if (parseExpression() == ERROR) { return ERROR; }
@@ -329,6 +330,7 @@ static int parseFactor() {
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
             }
+            printf(")");
             scanWithErrorJudge();
             break;
         }
@@ -572,10 +574,12 @@ static int parseOutputFormat() {
             if (parseExpression() == ERROR) { return ERROR; }
 
             if (token == TCOLON) {
+                printf(":");
                 scanWithErrorJudge();
                 if (token != TNUMBER) {
                     return errorWithReturn(getLineNum(), "'number' is not found");
                 }
+                printf("%s",getStrAttr());
                 scanWithErrorJudge();
             }
         }

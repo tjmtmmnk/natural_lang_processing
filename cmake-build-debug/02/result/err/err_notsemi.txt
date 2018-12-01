@@ -1,0 +1,1 @@
+program assigninteger[ERROR] line2 : ';' is not found

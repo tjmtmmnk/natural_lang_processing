@@ -1,0 +1,8 @@
+program change;
+    var
+        x: array[1000] of integer;
+    begin
+        x[0] := 1;
+        x[1] := 2;
+        x[3] := 3;
+[ERROR] line7 : 'end' is not found

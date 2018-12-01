@@ -1,0 +1,5 @@
+program change;
+    var
+        x: integer;
+[ERROR] line2 : type error
+        y:

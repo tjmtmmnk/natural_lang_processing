@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="natural_lang_process"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="natural_lang_process">
+				<Option output="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/natural_lang_process" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 natural_lang_process"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="natural_lang_process/fast">
+				<Option output="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/natural_lang_process" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 natural_lang_process/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/hp29/CLionProjects/natural_lang_process/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/main.c">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/common.c">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/common.h">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/id_list.c">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/lexical_analysis.c">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/lexical_analysis.h">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/syntatic_analysis.c">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/syntatic_analysis.h">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/token_list.c">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/my_lib/token_list.h">
+			<Option target="natural_lang_process"/>
+		</Unit>
+		<Unit filename="/Users/hp29/CLionProjects/natural_lang_process/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
