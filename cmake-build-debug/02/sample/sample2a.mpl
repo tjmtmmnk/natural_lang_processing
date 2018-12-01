@@ -44,5 +44,5 @@ while n  >=10000 do begin
               count := count +1; n := n-1
  end;
  if count >            0 then writeln('    1 yen : ',  count)
-/*  if n !=0 then break;  */
+ /*  if n !=0 then break;  */
 end.

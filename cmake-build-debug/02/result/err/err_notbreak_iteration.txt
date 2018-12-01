@@ -1,0 +1,7 @@
+program change;
+    begin
+        s := 0;
+        while (n > 0) do
+        n := n - 1
+    end.
+[ERROR] : 'break' must be included at least one in iteration statement

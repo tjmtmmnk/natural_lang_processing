@@ -1,0 +1,8 @@
+program change;
+    var
+        x: array[100] of integer;
+    begin
+        if x[0] > 3 then
+            x[0] := 2
+        else
+[ERROR] line8 : 'end' is not found

@@ -1,0 +1,6 @@
+program change;
+    begin
+        s := 0;
+        while (n > 0) do
+        n := n - 1;
+[ERROR] line4 : Can't include 'break' out of iteration state

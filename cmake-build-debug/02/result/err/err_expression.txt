@@ -1,0 +1,6 @@
+program change;
+    var
+        x: integer;
+    begin
+[ERROR] line4 : expression error
+        x := h
