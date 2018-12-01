@@ -1,0 +1,4 @@
+program change;
+    begin
+[ERROR] line3 : Too long words in string
+        write(

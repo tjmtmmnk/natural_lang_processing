@@ -1,0 +1,6 @@
+program change;
+    var
+        x: integer;
+    begin
+[ERROR] line5 : factor error
+        x := x and end

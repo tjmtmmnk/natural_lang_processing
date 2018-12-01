@@ -1,0 +1,7 @@
+program change;
+    var
+        x: integer;
+    begin
+        x := 10;
+[ERROR] line6 : 'do' is not found
+        while x > 0

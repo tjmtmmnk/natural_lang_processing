@@ -13,24 +13,10 @@ int main(int nc, char *np[]) {
 
     setFileName(np[1]);
     initScan();
+
     if(parseProgram() == OK){
         printf("\n!!!No Parse Error!!!\n");
     }
-
-//    int token_code;
-//    while ((token_code = scanTokenOneEach()) != SCAN_END) {
-//        token_counter[token_code]++;
-//    }
-//
-//#ifdef EXEC_MODE
-//    rep(i, 1, NUM_OF_TOKEN + 1) {
-//        if (token_counter[i] > 0) {
-//            printf("%-10s\t%28d\n", token_str[i], token_counter[i]);
-//        }
-//    }
-//    printf("\n");
-//    debugIDTable();
-//#endif
 
     closeFile();
 

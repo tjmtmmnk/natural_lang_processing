@@ -10,55 +10,30 @@ static int cnt_iteration, cnt_break;
 static int while_nest;
 
 static int parseStandardType();
-
 static int parseArrayType();
-
 static int parseType();
-
 static int parseName();
-
 static int parseVarNames();
-
 static int parseVarDecler();
-
 static int parseFormalParam();
-
 static int parseTerm();
-
 static int parseSimpleExpression();
-
 static int parseExpression();
-
 static int parseFactor();
-
 static int parseSubProgramDecler();
-
 static int parseConditionState();
-
 static int parseIterationState();
-
 static int parseCompoundState();
-
 static int parseCallState();
-
 static int parseExpressions();
-
 static int parseAssignState();
-
 static int parseInputState();
-
 static int parseOutputFormat();
-
 static int parseOutputState();
-
 static int parseState();
-
 static int parseVariable();
-
 static int parseBlock();
-
 static void scanWithErrorJudge();
-
 static void printWithTub(char *str, int tab_num, int exist_space);
 
 static void scanWithErrorJudge() {
@@ -433,9 +408,6 @@ static int parseExpression() {
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS || token == TSTRING) {
         if (parseSimpleExpression() == ERROR) { return ERROR; }
-        if (token == NONE) {
-            return errorWithReturn(getLineNum(), "expression error");
-        }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
             printf(" ");
@@ -579,7 +551,7 @@ static int parseOutputFormat() {
                 if (token != TNUMBER) {
                     return errorWithReturn(getLineNum(), "'number' is not found");
                 }
-                printf("%s",getStrAttr());
+                printf("%s", getStrAttr());
                 scanWithErrorJudge();
             }
         }
@@ -720,6 +692,7 @@ static int parseBlock() {
 /****************** public function *********************/
 int parseProgram() {
     scanWithErrorJudge();
+    // initialize
     tab_num = 0;
     cnt_iteration = 0;
     cnt_break = 0;
@@ -755,6 +728,5 @@ int parseProgram() {
         fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
         return ERROR;
     }
-
     return OK;
 }

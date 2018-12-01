@@ -24,7 +24,7 @@ while n  >=10000 do begin
            return;
              if count >0 then writeln(' 1000 yen : ',  count);
              count := 0;
-             write(integer(ch));
+             write(integer(count));
              if n < 100 then break;
               count := count +1; n := n-100;
               p[count+1] := 1

@@ -1,0 +1,6 @@
+program change;
+    var
+        x: array[100] of integer;
+    begin
+[ERROR] line5 : 'then' is not found
+        if x[0] > 3

@@ -1,0 +1,6 @@
+program change;
+    var
+        x: integer;
+    begin
+[ERROR] line4 : 'end' is not found
+        x := x
