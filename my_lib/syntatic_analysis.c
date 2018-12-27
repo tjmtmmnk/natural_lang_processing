@@ -382,7 +382,7 @@ static int parseSubProgramDecler() {
 static int parseSimpleExpression() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
-        token == TPLUS || token == TMINUS || token == TSTRING) {
+        token == TPLUS || token == TMINUS) {
         if (token == TPLUS || token == TMINUS) {
             printf(" ");
             printWithTub(token_str[token], 0, FALSE);
@@ -406,7 +406,7 @@ static int parseSimpleExpression() {
 static int parseExpression() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
-        token == TPLUS || token == TMINUS || token == TSTRING) {
+        token == TPLUS || token == TMINUS) {
         if (parseSimpleExpression() == ERROR) { return ERROR; }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
@@ -424,7 +424,7 @@ static int parseExpression() {
 static int parseExpressions() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
-        token == TPLUS || token == TMINUS || token == TSTRING) {
+        token == TPLUS || token == TMINUS) {
         if (parseExpression() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
@@ -536,7 +536,7 @@ static int parseOutputState() {
 static int parseOutputFormat() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
-        token == TPLUS || token == TMINUS || token == TSTRING) {
+        token == TPLUS || token == TMINUS) {
         if (token == TSTRING) {
             printWithTub("'", 0, FALSE);
             printWithTub(getStrAttr(), 0, FALSE);

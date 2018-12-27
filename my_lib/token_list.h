@@ -89,6 +89,17 @@ typedef enum MODE {
     MODE_COMMENT_BRACE  // {}
 } Mode;
 
+typedef enum TTYPE {
+    TPINT,
+    TPCHAR,
+    TOBOOL,
+    TPARRAY,
+    TPARRAYINT,
+    TPARRAYCHAR,
+    TPARRAYBOOL,
+    TPPROC
+} eType;
+
 extern const struct KEY {
     char *keyword;
     int token_number;
@@ -99,12 +110,33 @@ extern const struct SYMBOL {
     int token_number;
 } symbol[NUM_OF_SYMBOL];
 
-
 struct ID {
     char *name;
     int count;
     struct ID *nextp;
 } *idroot;
+
+struct TYPE {
+    eType token_type;
+    int array_size;
+    struct TYPE *p_array; /* pointer to element type if TPARRAY */
+    struct TYPE *p_proc; /* pointer to parameter's type list if token_type is TPPROC */
+};
+
+struct LINE {
+    int ref_line;
+    struct LINE *p_next;
+};
+
+struct EXID {
+    char *name;
+    char *proc_name;
+    struct TYPE *p_type;
+    int is_formal_param; /* 1:formal parameter, 0:else(variable) */
+    int def_line;
+    struct LINE *p_ref;
+    struct ID *p_next;
+} *grobal_id, *local_id;
 
 extern const char cont_sym[NUM_OF_CONT_SYMBOL][3]; //continuous symbol
 extern const char split[NUM_OF_SPLIT];
