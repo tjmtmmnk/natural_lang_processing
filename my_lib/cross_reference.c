@@ -10,27 +10,39 @@ void initExIDTable() {
 
 static struct EXID *existExIDinTable(eScope scope, char *name) {
     struct EXID *p;
-
-    switch (scope) {
-        case GLOBAL: {
-            for (p = global_id_root; p != NULL; p = p->p_next) {
-                if (strcmp(name, p->name) == 0) { return p; }
+    struct EXID *exid;
+    int def_cnt = 0;
+    if (scope == GLOBAL) {
+        for (p = global_id_root; p != NULL; p = p->p_next) {
+            if (strcmp(name, p->name) == 0) {
+                def_cnt++;
+                exid = p;
             }
-            return NULL;
         }
-        case LOCAL: {
-            for (p = local_id_root; p != NULL; p = p->p_next) {
-                if (strcmp(name, p->name) == 0) { return p; }
+        if (def_cnt == 0) { return NULL; }
+    } else if (scope == LOCAL) {
+        for (p = local_id_root; p != NULL; p = p->p_next) {
+            if (strcmp(name, p->name) == 0) {
+                def_cnt++;
+                exid = p;
             }
-            return NULL;
         }
+        if (def_cnt == 0) { return NULL; }
     }
-    return NULL;
+
+    if (def_cnt > 1) {
+        fprintf(stderr, "You defined the same variable more than twice in the same scope.\n");
+        return NULL;
+    }
+
+    return exid;
 }
 
-void registerExID(eScope scope, char *name, int def_line, int is_formal_param) {
+void registerExID(eScope scope, char *name, int def_line, int is_formal_param, char *proc_name) {
     struct EXID *p;
     char *np;
+
+    if (scope == SCOPE_NONE) { return; }
 
     if ((p = existExIDinTable(scope, name)) != NULL) { return; }
 
@@ -49,7 +61,30 @@ void registerExID(eScope scope, char *name, int def_line, int is_formal_param) {
     p->is_formal_param = is_formal_param;
     if (scope == GLOBAL) {
         p->p_next = global_id_root;
+        global_id_root = p;
     } else if (scope == LOCAL) {
         p->p_next = local_id_root;
+        p->proc_name = proc_name;
+        local_id_root = p;
+    }
+}
+
+void updateExIDType(eScope scope, char *name, struct TYPE *type) {
+    struct EXID *p;
+
+    if ((p = existExIDinTable(scope, name)) == NULL) { return; }
+
+    p->p_type = type;
+}
+
+void debugExIDTable() {
+    struct EXID *p;
+    printf("global : \n");
+    for (p = global_id_root; p != NULL; p = p->p_next) {
+        printf("%s%d\t", p->name, p->def_line);
+    }
+    printf("\nlocal : \n");
+    for (p = local_id_root; p != NULL; p = p->p_next) {
+        printf("%s%d\t", p->name, p->def_line);
     }
 }
