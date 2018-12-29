@@ -1,5 +1,6 @@
 #include "syntatic_analysis.h"
 #include "lexical_analysis.h"
+#include "cross_reference.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -257,7 +258,7 @@ static int parseFactor() {
         case TFALSE:
         case TTRUE: {
             scanWithErrorJudge();
-            break;
+            return TPBOOL;
         }
         case TNUMBER: {
             printf("%s", getStrAttr());
@@ -286,12 +287,13 @@ static int parseFactor() {
         case TNOT: {
             printf(" ");
             scanWithErrorJudge();
-            if (parseFactor() == ERROR) { return ERROR; }
+            if (parseFactor() != TPBOOL) { return ERROR; } // TODO : Implementation of error
             break;
         }
         case TINTEGER:
         case TBOOLEAN:
         case TCHAR: {
+            int _token = token;
             scanWithErrorJudge();
 
             if (token != TLPAREN) {
@@ -307,6 +309,13 @@ static int parseFactor() {
             }
             printf(")");
             scanWithErrorJudge();
+            if (_token == TINTEGER) {
+                return TPINT;
+            } else if (_token == TBOOLEAN) {
+                return TPBOOL;
+            } else if (_token == TCHAR) {
+                return TPCHAR;
+            }
             break;
         }
         default:
