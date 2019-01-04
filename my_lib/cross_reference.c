@@ -62,6 +62,7 @@ int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
     p->def_line = def_line;
     p->has_set_type = has_set_type;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
+    p->p_next = NULL;
 
     if (scope == GLOBAL) {
         strcpy(p->proc_name, "global");
@@ -120,8 +121,8 @@ int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
                         return 0;
                 }
             }
+            p->has_set_type = 1;
         }
-        p->has_set_type = 1; //use for flag to indicate whether or not it has been updated
     }
 
     return 1;
@@ -129,23 +130,29 @@ int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
 
 int updateExIDTypeProcedure() {
     struct EXID *p, *q;
+    struct TYPE *t;
     for (p = local_id_root; p != NULL; p = p->p_next) {
         if ((strcmp(proc_name, p->proc_name) == 0) && (strcmp(p->name, p->proc_name) == 0)) { //procedure
             p->p_type->var_type = TPPROC;
+            p->has_set_type = TRUE;
             break;
         }
     }
 
+    if (p == NULL) { return 0; }
+
+    t = p->p_type;
+
     for (q = local_id_root; q != NULL; q = q->p_next) {
         if ((strcmp(proc_name, q->proc_name) == 0) && (strcmp(q->name, q->proc_name) > 0)) {
-            if ((p->p_type->p_proc = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
+            if ((t->p_proc = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
                 fprintf(stderr, "[ERROR] can't malloc in 'updateExIDTypeProcedure'\n");
                 return 0;
             }
-            p->p_type->p_proc->var_type = q->p_type->var_type;
-            p->p_type->p_proc->array_size = q->p_type->array_size;
-            p->p_type->p_proc = q->p_type;
-            p = q;
+            t->p_proc->var_type = q->p_type->var_type;
+            t->p_proc->array_size = q->p_type->array_size;
+            t->p_proc->p_proc = NULL;
+            t = t->p_proc;
         }
     }
 
@@ -154,26 +161,21 @@ int updateExIDTypeProcedure() {
 
 void debugExIDTable() {
     struct EXID *p;
+    struct TYPE *t;
     printf("global : \n");
     for (p = global_id_root; p != NULL; p = p->p_next) {
         printf("%d\t%s\t%d\n", p->def_line, p->name, p->p_type->var_type);
     }
     printf("\nlocal : \n");
     for (p = local_id_root; p != NULL; p = p->p_next) {
-        printf("%d\t%s\t%s\t%d\n", p->def_line, p->name, p->proc_name, p->p_type->var_type);
-    }
-}
-
-void debug() {
-    struct EXID *p;
-    struct TYPE *t;
-    for (p = local_id_root; p != NULL; p = p->p_next) {
+        printf("%d\t%s\t%s\t", p->def_line, p->name, p->proc_name);
         if (p->p_type->var_type == TPPROC) {
-            printf("%s\t%d\t", p->name, p->p_type->var_type);
-            for (t = p->p_type->p_proc; t != NULL; t = t->p_proc) {
+            for (t = p->p_type; t != NULL; t = t->p_proc) {
                 printf("%d\t", t->var_type);
             }
-            printf("\n");
+        } else {
+            printf("%d\t", p->p_type->var_type);
         }
+        printf("\n");
     }
 }

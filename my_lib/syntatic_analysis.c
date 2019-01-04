@@ -2,9 +2,6 @@
 #include "lexical_analysis.h"
 #include "cross_reference.h"
 
-#define TRUE 1
-#define FALSE 0
-
 static int token;
 static int tab_num;
 static int cnt_iteration, cnt_break;
