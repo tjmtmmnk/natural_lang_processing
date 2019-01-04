@@ -49,8 +49,10 @@ struct EXID {
 extern void initGlobalID();
 extern void initLocalID();
 extern int registerExID(eScope scope, char *name, int def_line, int is_formal_param);
-int updateExIDType(eScope scope, eKeyword type, int is_array, int size);
+extern int updateExIDType(eScope scope, eKeyword type, int is_array, int size);
+extern int updateExIDTypeProcedure();
 extern void debugExIDTable();
+extern void debug();
 extern void setProcName(char *name);
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

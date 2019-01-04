@@ -31,7 +31,7 @@ static struct EXID *existExIDinTable(eScope scope, char *name) {
 }
 
 int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
-    struct EXID *p;
+    struct EXID *p, **q;
     char *np;
 
     if (scope == SCOPE_NONE) { return 0; } //do nothing
@@ -64,14 +64,15 @@ int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
 
     if (scope == GLOBAL) {
-        p->p_next = global_id_root;
         strcpy(p->proc_name, "global");
-        global_id_root = p;
+        q = &global_id_root;
     } else if (scope == LOCAL) {
         strcpy(p->proc_name, proc_name);
-        p->p_next = local_id_root;
-        local_id_root = p;
+        q = &local_id_root;
     }
+
+    for (; *q != NULL; q = &((*q)->p_next));
+    *q = p;
 
     return 1;
 }
@@ -86,30 +87,39 @@ int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
         return 0;
     }
 
-    for (; p != NULL; p = p->p_next) { //correspond to formal param sequence of types
+    for (; p != NULL; p = p->p_next) {
         if (!p->has_set_type) {
-            switch (type) {
-                case TINTEGER:
-                    p->p_type->var_type = TPINT;
-                    break;
-                case TCHAR:
-                    p->p_type->var_type = TPCHAR;
-                    break;
-                case TBOOLEAN:
-                    p->p_type->var_type = TPBOOL;
-                    break;
-                default:
-                    return 0;
-            }
-        }
-        if (is_array) {
-            if (1 <= size && size < MAX_WORD_LENGTH) {
+            if (is_array) {
                 p->p_type->array_size = size;
+                switch (type) {
+                    case TINTEGER:
+                        p->p_type->var_type = TPARRAYINT;
+                        break;
+                    case TCHAR:
+                        p->p_type->var_type = TPARRAYCHAR;
+                        break;
+                    case TBOOLEAN:
+                        p->p_type->var_type = TPARRAYBOOL;
+                        break;
+                    default:
+                        return 0;
+                }
             } else {
-                return errorWithReturn(getLineNum(), "size over (1~32767)");
+                p->p_type->array_size = 0;
+                switch (type) {
+                    case TINTEGER:
+                        p->p_type->var_type = TPINT;
+                        break;
+                    case TCHAR:
+                        p->p_type->var_type = TPCHAR;
+                        break;
+                    case TBOOLEAN:
+                        p->p_type->var_type = TPBOOL;
+                        break;
+                    default:
+                        return 0;
+                }
             }
-        } else {
-            p->p_type->array_size = 0;
         }
         p->has_set_type = 1; //use for flag to indicate whether or not it has been updated
     }
@@ -117,7 +127,30 @@ int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
     return 1;
 }
 
-//int updateExIDTypeProcedure(eScope scope, char *name, char *_proc_name);
+int updateExIDTypeProcedure() {
+    struct EXID *p, *q;
+    for (p = local_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(proc_name, p->proc_name) == 0) && (strcmp(p->name, p->proc_name) == 0)) { //procedure
+            p->p_type->var_type = TPPROC;
+            break;
+        }
+    }
+
+    for (q = local_id_root; q != NULL; q = q->p_next) {
+        if ((strcmp(proc_name, q->proc_name) == 0) && (strcmp(q->name, q->proc_name) > 0)) {
+            if ((p->p_type->p_proc = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
+                fprintf(stderr, "[ERROR] can't malloc in 'updateExIDTypeProcedure'\n");
+                return 0;
+            }
+            p->p_type->p_proc->var_type = q->p_type->var_type;
+            p->p_type->p_proc->array_size = q->p_type->array_size;
+            p->p_type->p_proc = q->p_type;
+            p = q;
+        }
+    }
+
+    return 1;
+}
 
 void debugExIDTable() {
     struct EXID *p;
@@ -128,5 +161,19 @@ void debugExIDTable() {
     printf("\nlocal : \n");
     for (p = local_id_root; p != NULL; p = p->p_next) {
         printf("%d\t%s\t%s\t%d\n", p->def_line, p->name, p->proc_name, p->p_type->var_type);
+    }
+}
+
+void debug() {
+    struct EXID *p;
+    struct TYPE *t;
+    for (p = local_id_root; p != NULL; p = p->p_next) {
+        if (p->p_type->var_type == TPPROC) {
+            printf("%s\t%d\t", p->name, p->p_type->var_type);
+            for (t = p->p_type->p_proc; t != NULL; t = t->p_proc) {
+                printf("%d\t", t->var_type);
+            }
+            printf("\n");
+        }
     }
 }

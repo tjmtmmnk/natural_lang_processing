@@ -373,6 +373,7 @@ static int parseSubProgramDecler() {
             return errorWithReturn(getLineNum(), "';' is not found");
         }
         printf(";\n");
+        updateExIDTypeProcedure();
         scanWithErrorJudge();
 
         if (token == TVAR) {
@@ -746,5 +747,6 @@ int parseProgram() {
         return ERROR;
     }
     debugExIDTable();
+//    debug();
     return OK;
 }
