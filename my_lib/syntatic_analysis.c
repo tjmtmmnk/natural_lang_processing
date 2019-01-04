@@ -9,11 +9,11 @@ static int token;
 static int tab_num;
 static int cnt_iteration, cnt_break;
 static int while_nest;
-static int parseStandardType();
-static int parseArrayType();
-static int parseType();
-static int parseName(eScope scope, int is_formal_param);
-static int parseVarNames(eScope scope, int is_formal_param);
+static int parseStandardType(eScope scope, int is_array, int has_set_type);
+static int parseArrayType(eScope scope);
+static int parseType(eScope scope);
+static int parseName(eScope scope);
+static int parseVarNames(eScope scope);
 static int parseVarDecler(eScope scope);
 static int parseFormalParam();
 static int parseTerm();
@@ -53,8 +53,9 @@ static void printWithTub(char *str, int tab_num, int exist_space) {
     }
 }
 
-static int parseStandardType() {
+static int parseStandardType(eScope scope, int is_array, int size) {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
+        updateExIDType(scope, token, is_array, size);
         printf("%s", token_str[token]);
         scanWithErrorJudge();
         return OK;
@@ -62,7 +63,7 @@ static int parseStandardType() {
     return errorWithReturn(getLineNum(), "'standard type' is not found");
 }
 
-static int parseArrayType() {
+static int parseArrayType(eScope scope) {
     if (token == TARRAY) {
         printf("array");
         scanWithErrorJudge();
@@ -77,6 +78,8 @@ static int parseArrayType() {
             return errorWithReturn(getLineNum(), "'NUMBER' is not found");
         }
         printf("%s", getStrAttr());
+        int size = 0;
+        sscanf(getStrAttr(), "%d", &size);
         scanWithErrorJudge();
 
         if (token != TRSQPAREN) {
@@ -91,44 +94,44 @@ static int parseArrayType() {
         printf("of ");
         scanWithErrorJudge();
 
-        if (parseStandardType() == ERROR) { return ERROR; }
+        if (parseStandardType(scope, TRUE, size) == ERROR) { return ERROR; }
         return OK;
     }
     return errorWithReturn(getLineNum(), "'array' is not found");
 }
 
-static int parseType() {
+static int parseType(eScope scope) {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR || token == TARRAY) {
         if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-            if (parseStandardType() == ERROR) { return ERROR; }
+            if (parseStandardType(scope, FALSE, 0) == ERROR) { return ERROR; }
         }
 
         if (token == TARRAY) {
-            if (parseArrayType() == ERROR) { return ERROR; }
+            if (parseArrayType(scope) == ERROR) { return ERROR; }
         }
         return OK;
     }
     return errorWithReturn(getLineNum(), "type error");
 }
 
-static int parseName(eScope scope, int is_formal_param) {
+static int parseName(eScope scope) {
     if (token == TNAME) {
         printWithTub(getStrAttr(), 0, FALSE);
-        registerExID(scope, getStrAttr(), getLineNum(), is_formal_param);
+        registerExID(scope, getStrAttr(), getLineNum(), FALSE);
         scanWithErrorJudge();
         return OK;
     }
     return errorWithReturn(getLineNum(), "'NAME' is not found");
 }
 
-static int parseVarNames(eScope scope, int is_formal_param) {
+static int parseVarNames(eScope scope) {
     if (token == TNAME) {
-        if (parseName(scope, is_formal_param) == ERROR) { return ERROR; }
+        if (parseName(scope) == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (parseName(scope, is_formal_param) == ERROR) { return ERROR; }
+            if (parseName(scope) == ERROR) { return ERROR; }
         }
 
         return OK;
@@ -143,7 +146,7 @@ static int parseVarDecler(eScope scope) {
 
         tab_num++;
         printWithTub("", tab_num, FALSE);
-        if (parseVarNames(scope, 0) == ERROR) { return ERROR; }
+        if (parseVarNames(scope) == ERROR) { return ERROR; }
         tab_num--;
 
         if (token != TCOLON) {
@@ -152,7 +155,7 @@ static int parseVarDecler(eScope scope) {
         printf(": ");
         scanWithErrorJudge();
 
-        if (parseType() == ERROR) { return ERROR; }
+        if (parseType(scope) == ERROR) { return ERROR; }
 
         if (token != TSEMI) {
             return errorWithReturn(getLineNum(), "';' is not found");
@@ -163,7 +166,7 @@ static int parseVarDecler(eScope scope) {
         while (token == TNAME) {
             tab_num++;
             printWithTub("", tab_num, FALSE);
-            if (parseVarNames(scope, 0) == ERROR) { return ERROR; }
+            if (parseVarNames(scope) == ERROR) { return ERROR; }
             tab_num--;
 
             if (token != TCOLON) {
@@ -172,7 +175,7 @@ static int parseVarDecler(eScope scope) {
             printf(": ");
             scanWithErrorJudge();
 
-            if (parseType() == ERROR) { return ERROR; }
+            if (parseType(scope) == ERROR) { return ERROR; }
 
             if (token != TSEMI) {
                 return errorWithReturn(getLineNum(), "';' is not found");
@@ -191,7 +194,7 @@ static int parseFormalParam() {
         scanWithErrorJudge();
         printf("(");
 
-        if (parseVarNames(LOCAL, 1) == ERROR) { return ERROR; }
+        if (parseVarNames(LOCAL) == ERROR) { return ERROR; }
         printf(" ");
 
         if (token != TCOLON) {
@@ -200,13 +203,13 @@ static int parseFormalParam() {
         printf(": ");
         scanWithErrorJudge();
 
-        if (parseType() == ERROR) { return ERROR; }
+        if (parseType(LOCAL) == ERROR) { return ERROR; }
 
         while (token == TSEMI) {
             scanWithErrorJudge();
             printf("; ");
 
-            if (parseVarNames(LOCAL, 1) == ERROR) { return ERROR; }
+            if (parseVarNames(LOCAL) == ERROR) { return ERROR; }
 
             if (token != TCOLON) {
                 return errorWithReturn(getLineNum(), "':' is not found");
@@ -214,7 +217,7 @@ static int parseFormalParam() {
             printf(" : ");
             scanWithErrorJudge();
 
-            if (parseType() == ERROR) { return ERROR; }
+            if (parseType(LOCAL) == ERROR) { return ERROR; }
         }
 
         if (token != TRPAREN) {
@@ -360,7 +363,7 @@ static int parseSubProgramDecler() {
 
         setProcName(getStrAttr());
 
-        if (parseName(LOCAL, FALSE) == ERROR) { return ERROR; }
+        if (parseName(LOCAL) == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
             if (parseFormalParam() == ERROR) { return ERROR; }
@@ -468,7 +471,7 @@ static int parseCallState() {
     printf(" ");
     scanWithErrorJudge();
     setProcName("call");
-    if (parseName(LOCAL, TRUE) == ERROR) { return ERROR; }
+    if (parseName(LOCAL) == ERROR) { return ERROR; }
 
     if (token == TLPAREN) {
         printf("(");
@@ -663,7 +666,7 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        if (parseName(SCOPE_NONE, FALSE) == ERROR) { return ERROR; }
+        if (parseName(SCOPE_NONE) == ERROR) { return ERROR; }
 
         if (token == TLSQPAREN) {
             printf("[");
@@ -738,6 +741,7 @@ int parseProgram() {
     printf(".\n");
 
     if (cnt_iteration > 0 && cnt_break == 0) {
+        // can't know line number -> can't return errorWithReturn()
         fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
         return ERROR;
     }

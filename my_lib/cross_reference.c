@@ -30,27 +30,37 @@ static struct EXID *existExIDinTable(eScope scope, char *name) {
     return NULL;
 }
 
-int registerExID(eScope scope, char *name, int def_line, int is_formal_param) {
+int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
     struct EXID *p;
     char *np;
 
     if (scope == SCOPE_NONE) { return 0; } //do nothing
+
+    if (strcmp(proc_name, "call") == 0) { return 0; } //do nothing
 
     if ((p = existExIDinTable(scope, name)) != NULL) {
         return errorWithReturn(getLineNum(), "twice define");
     }
 
     if ((p = (struct EXID *) malloc(sizeof(struct EXID))) == NULL) {
-        return errorWithReturn(getLineNum(), "can't malloc in 'registerExID'");
+        fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
+        return 0;
     }
 
     if ((np = (char *) malloc(strlen(name) + 1)) == NULL) {
-        return errorWithReturn(getLineNum(), "can't malloc in 'registerExID'");
+        fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
+        return 0;
     }
+
+    if ((p->p_type = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
+        fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
+        return 0;
+    }
+
     strcpy(np, name);
     p->name = np;
     p->def_line = def_line;
-    p->is_formal_param = is_formal_param;
+    p->has_set_type = has_set_type;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
 
     if (scope == GLOBAL) {
@@ -66,20 +76,57 @@ int registerExID(eScope scope, char *name, int def_line, int is_formal_param) {
     return 1;
 }
 
-void updateExIDType(eScope scope, char *name, struct TYPE *type) {
+int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
     struct EXID *p;
-    if ((p = existExIDinTable(scope, name)) == NULL) { return; }
-    p->p_type = type;
+    if (scope == LOCAL) {
+        p = local_id_root;
+    } else if (scope == GLOBAL) {
+        p = global_id_root;
+    } else {
+        return 0;
+    }
+
+    for (; p != NULL; p = p->p_next) { //correspond to formal param sequence of types
+        if (!p->has_set_type) {
+            switch (type) {
+                case TINTEGER:
+                    p->p_type->var_type = TPINT;
+                    break;
+                case TCHAR:
+                    p->p_type->var_type = TPCHAR;
+                    break;
+                case TBOOLEAN:
+                    p->p_type->var_type = TPBOOL;
+                    break;
+                default:
+                    return 0;
+            }
+        }
+        if (is_array) {
+            if (1 <= size && size < MAX_WORD_LENGTH) {
+                p->p_type->array_size = size;
+            } else {
+                return errorWithReturn(getLineNum(), "size over (1~32767)");
+            }
+        } else {
+            p->p_type->array_size = 0;
+        }
+        p->has_set_type = 1; //use for flag to indicate whether or not it has been updated
+    }
+
+    return 1;
 }
+
+//int updateExIDTypeProcedure(eScope scope, char *name, char *_proc_name);
 
 void debugExIDTable() {
     struct EXID *p;
     printf("global : \n");
     for (p = global_id_root; p != NULL; p = p->p_next) {
-        printf("%s%d\t%s\n", p->name, p->def_line, p->proc_name);
+        printf("%d\t%s\t%d\n", p->def_line, p->name, p->p_type->var_type);
     }
     printf("\nlocal : \n");
     for (p = local_id_root; p != NULL; p = p->p_next) {
-        printf("%s%d\t%s\n", p->name, p->def_line, p->proc_name);
+        printf("%d\t%s\t%s\t%d\n", p->def_line, p->name, p->proc_name, p->p_type->var_type);
     }
 }

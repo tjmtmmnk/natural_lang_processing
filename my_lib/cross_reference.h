@@ -8,7 +8,7 @@
 #include "lexical_analysis.h"
 
 #define PROC_NAME_LENGTH 100
-typedef enum ETYPE {
+typedef enum e_type {
     TPINT = 50,
     TPCHAR,
     TPBOOL,
@@ -19,16 +19,15 @@ typedef enum ETYPE {
     TPPROC
 } eType;
 
-typedef enum ESCOPE {
+typedef enum e_scope {
     GLOBAL = 100,
     LOCAL,
     SCOPE_NONE
 } eScope;
 
 struct TYPE {
-    eType var_type; /*the type of variable*/
+    eType var_type;
     int array_size;
-    struct TYPE *p_array; /* pointer to element type if TPARRAY */
     struct TYPE *p_proc; /* pointer to parameter's type list if token_type is TPPROC */
 };
 
@@ -41,7 +40,7 @@ struct EXID {
     char *name;
     char *proc_name;
     struct TYPE *p_type;
-    int is_formal_param; /* 1:formal parameter, 0:else(variable) */
+    int has_set_type;
     int def_line;
     struct LINE *p_ref; //correspond to muitiple reference
     struct EXID *p_next;
@@ -50,8 +49,7 @@ struct EXID {
 extern void initGlobalID();
 extern void initLocalID();
 extern int registerExID(eScope scope, char *name, int def_line, int is_formal_param);
-extern void updateExIDType(eScope scope, char *name, struct TYPE *type);
-extern void updateExIDProcName(eScope scope, char *name, char *proc_name);
+int updateExIDType(eScope scope, eKeyword type, int is_array, int size);
 extern void debugExIDTable();
 extern void setProcName(char *name);
 
