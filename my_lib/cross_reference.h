@@ -1,6 +1,13 @@
 #ifndef NATURAL_LANG_PROCESS_CROSS_REFERENCE_H
 #define NATURAL_LANG_PROCESS_CROSS_REFERENCE_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include "string.h"
+#include "common.h"
+#include "lexical_analysis.h"
+
+#define PROC_NAME_LENGTH 100
 typedef enum ETYPE {
     TPINT = 50,
     TPCHAR,
@@ -40,9 +47,12 @@ struct EXID {
     struct EXID *p_next;
 } *global_id_root, *local_id_root;
 
-extern void initExIDTable();
-extern void registerExID(eScope scope, char *name, int def_line, int is_formal_param, char *proc_name);
+extern void initGlobalID();
+extern void initLocalID();
+extern int registerExID(eScope scope, char *name, int def_line, int is_formal_param);
 extern void updateExIDType(eScope scope, char *name, struct TYPE *type);
+extern void updateExIDProcName(eScope scope, char *name, char *proc_name);
 extern void debugExIDTable();
+extern void setProcName(char *name);
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H
