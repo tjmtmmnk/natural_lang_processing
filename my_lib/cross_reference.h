@@ -7,7 +7,6 @@
 #include "common.h"
 #include "lexical_analysis.h"
 
-
 #define PROC_NAME_LENGTH 100
 typedef enum e_type {
     TPINT = 50,
@@ -22,8 +21,7 @@ typedef enum e_type {
 
 typedef enum e_scope {
     GLOBAL = 100,
-    LOCAL,
-    SCOPE_NONE
+    LOCAL
 } eScope;
 
 struct TYPE {
@@ -52,7 +50,7 @@ extern void initLocalID();
 extern int registerExID(eScope scope, char *name, int def_line, int is_formal_param);
 extern int updateExIDType(eScope scope, eKeyword type, int is_array, int size);
 extern int updateExIDTypeProcedure();
-extern  int updateExIDRefLine(eScope scope, char *var_name, int ref_line);
+extern int updateExIDRefLine(char *name, int ref_line);
 extern void debugExIDTable();
 extern void setProcName(char *name);
 

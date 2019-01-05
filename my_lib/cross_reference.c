@@ -34,11 +34,9 @@ int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
     struct EXID *p, **q;
     char *np;
 
-    if (scope == SCOPE_NONE) { return 0; } //do nothing
-
     if (strcmp(proc_name, "call") == 0) { return 0; } //do nothing
 
-    if ((p = existExIDinTable(scope, name)) != NULL) {
+    if ((p = existExIDinTable(scope, name)) != NULL && p->def_line == def_line) {
         return errorWithReturn(getLineNum(), "twice define");
     }
 
@@ -68,6 +66,7 @@ int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
     p->has_set_type = has_set_type;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
     p->p_next = NULL;
+    p->p_ref = NULL;
     p->p_type->array_size = 0;
 
     strcpy(p->proc_name, proc_name);
@@ -165,12 +164,24 @@ int updateExIDTypeProcedure() {
     return 1;
 }
 
-int updateExIDRefLine(eScope scope, char *var_name, int ref_line) {
+int updateExIDRefLine(char *name, int ref_line) {
     struct EXID *p;
     struct LINE *node;
     struct LINE **q;
 
-    if ((p = existExIDinTable(scope, var_name)) == NULL) { return 0; }
+    for (p = global_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, "global") == 0)) { break; }
+    }
+
+    if (p == NULL) {
+        for (p = local_id_root; p != NULL; p = p->p_next) {
+            if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0)) { break; }
+        }
+    }
+
+    if (p == NULL) { return 0; }
+
+    if (p->def_line == ref_line) { return 0; }
 
     if ((node = (struct LINE *) malloc(sizeof(struct LINE))) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'updateExIDRefLine'\n");
@@ -180,7 +191,9 @@ int updateExIDRefLine(eScope scope, char *var_name, int ref_line) {
     node->ref_line = ref_line;
     node->p_next = NULL;
 
-    for (q = &(p->p_ref); *q != NULL; q = &((*q)->p_next));
+    for (q = &(p->p_ref); *q != NULL; q = &((*q)->p_next)) {
+        if ((*q)->ref_line == ref_line) { return 0; }
+    }
 
     *q = node;
 
@@ -190,15 +203,20 @@ int updateExIDRefLine(eScope scope, char *var_name, int ref_line) {
 void debugExIDTable() {
     struct EXID *p;
     struct TYPE *t;
+    struct LINE *l;
     printf("global : \n");
     for (p = global_id_root; p != NULL; p = p->p_next) {
-        printf("%d\t%d\t%s\t", p->def_line, p->p_type->array_size, p->name);
+        printf("%d\t%d\t%s\t%s\t", p->def_line, p->p_type->array_size, p->name, p->proc_name);
         if (p->p_type->var_type == TPPROC) {
             for (t = p->p_type; t != NULL; t = t->p_proc) {
                 printf("%d\t", t->var_type);
             }
         } else {
             printf("%d\t", p->p_type->var_type);
+        }
+        printf("|\t");
+        for (l = p->p_ref; l != NULL; l = l->p_next) {
+            printf("%d\t", l->ref_line);
         }
         printf("\n");
     }
@@ -211,6 +229,10 @@ void debugExIDTable() {
             }
         } else {
             printf("%d\t", p->p_type->var_type);
+        }
+        printf("|\t");
+        for (l = p->p_ref; l != NULL; l = l->p_next) {
+            printf("%d\t", l->ref_line);
         }
         printf("\n");
     }

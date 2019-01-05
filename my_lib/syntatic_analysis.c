@@ -115,7 +115,6 @@ static int parseType() {
 static int parseName() {
     if (token == TNAME) {
         printWithTub(getStrAttr(), 0, FALSE);
-        registerExID(scope, getStrAttr(), getLineNum(), FALSE);
         scanWithErrorJudge();
         return OK;
     }
@@ -124,11 +123,13 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
+        registerExID(scope, getStrAttr(), getLineNum(), FALSE);
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
+            registerExID(scope, getStrAttr(), getLineNum(), FALSE);
             if (parseName() == ERROR) { return ERROR; }
         }
 
@@ -361,7 +362,7 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-
+        registerExID(scope, getStrAttr(), getLineNum(), FALSE);
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
@@ -669,9 +670,8 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        scope = SCOPE_NONE;
+        updateExIDRefLine(getStrAttr(), getLineNum());
         if (parseName() == ERROR) { return ERROR; }
-//        updateExIDRefLine()
         if (token == TLSQPAREN) {
             printf("[");
             scanWithErrorJudge();
