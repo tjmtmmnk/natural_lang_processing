@@ -55,5 +55,9 @@ extern void debugExIDTable();
 extern void setProcName(char *name);
 extern void setScope(eScope _scope);
 int isPrevDefined(char *name);
+int isStandardType(int type);
+int standartToArrayType(int stype);
+int getLocalVarType(char *name);
+int getGlobalVarType(char *name);
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

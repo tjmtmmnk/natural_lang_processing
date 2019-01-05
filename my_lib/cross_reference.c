@@ -38,16 +38,14 @@ static struct EXID *existExIDinTable(eScope _scope, char *name) {
 // @param _scope : must be declered place's scope
 int isPrevDefined(char *name) {
     struct EXID *p;
-    p = existExIDinTable(GLOBAL, name);
-    p = (p == NULL) ? existExIDinTable(LOCAL, name) : p;
+    p = existExIDinTable(LOCAL, name);
+    p = (p == NULL) ? existExIDinTable(GLOBAL, name) : p;
     return p != NULL;
 }
 
 int registerExID(char *name, int def_line, int has_set_type) {
     struct EXID *p, **q;
     char *np;
-
-    if (strcmp(proc_name, "call") == 0) { return 0; } //do nothing
 
     if ((p = existExIDinTable(scope, name)) != NULL && p->def_line == def_line) {
         return errorWithReturn(getLineNum(), "twice define");
@@ -194,8 +192,6 @@ int updateExIDRefLine(char *name, int ref_line) {
 
     if (p == NULL) { return 0; }
 
-    if (p->def_line == ref_line) { return 0; }
-
     if ((node = (struct LINE *) malloc(sizeof(struct LINE))) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'updateExIDRefLine'\n");
         return 0;
@@ -205,12 +201,60 @@ int updateExIDRefLine(char *name, int ref_line) {
     node->p_next = NULL;
 
     for (q = &(p->p_ref); *q != NULL; q = &((*q)->p_next)) {
-        if ((*q)->ref_line == ref_line) { return 0; }
+//        if ((*q)->ref_line == ref_line) { return 0; }
     }
 
     *q = node;
 
-    return 1;
+    return p->p_type->var_type;
+}
+
+int getLocalVarType(char *name) {
+    struct EXID *p;
+    for (p = local_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0)) { return p->p_type->var_type; }
+    }
+    return 0;
+}
+
+int getGlobalVarType(char *name) {
+    struct EXID *p;
+    for (p = global_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, name) == 0)) { return p->p_type->var_type; }
+    }
+    return 0;
+}
+
+int isStandardType(int type) {
+    switch (type) {
+        case TINTEGER:
+        case TCHAR:
+        case TBOOLEAN:
+        case TPINT:
+        case TPCHAR:
+        case TPBOOL:
+            return TRUE;
+        case TARRAY:
+        case TPARRAYINT:
+        case TPARRAYCHAR:
+        case TPARRAYBOOL:
+            return FALSE;
+        default:
+            return errorWithReturn(getLineNum(), "unknown type");
+    }
+}
+
+int standartToArrayType(int stype) {
+    switch (stype) {
+        case TINTEGER:
+            return TPARRAYINT;
+        case TCHAR:
+            return TPARRAYCHAR;
+        case TBOOLEAN:
+            return TPARRAYBOOL;
+        default:
+            return errorWithReturn(getLineNum(), "unknown type");
+    }
 }
 
 void debugExIDTable() {
