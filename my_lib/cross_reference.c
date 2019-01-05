@@ -107,39 +107,14 @@ int updateExIDType(eKeyword type, int is_array, int size) {
         if (!p->has_set_type) {
             if (is_array) {
                 p->p_type->array_size = size;
-                switch (type) {
-                    case TINTEGER:
-                        p->p_type->var_type = TPARRAYINT;
-                        break;
-                    case TCHAR:
-                        p->p_type->var_type = TPARRAYCHAR;
-                        break;
-                    case TBOOLEAN:
-                        p->p_type->var_type = TPARRAYBOOL;
-                        break;
-                    default:
-                        return 0;
-                }
+                p->p_type->var_type = keywordToType(type, TRUE);
             } else {
                 p->p_type->array_size = 0;
-                switch (type) {
-                    case TINTEGER:
-                        p->p_type->var_type = TPINT;
-                        break;
-                    case TCHAR:
-                        p->p_type->var_type = TPCHAR;
-                        break;
-                    case TBOOLEAN:
-                        p->p_type->var_type = TPBOOL;
-                        break;
-                    default:
-                        return 0;
-                }
+                p->p_type->var_type = keywordToType(type, FALSE);
             }
             p->has_set_type = 1;
         }
     }
-
     return 1;
 }
 
@@ -175,18 +150,18 @@ int updateExIDTypeProcedure() {
     return 1;
 }
 
-int updateExIDRefLine(char *name, int ref_line) {
+int updateExIDRefLine(char *name, int ref_line, int type) {
     struct EXID *p;
     struct LINE *node;
     struct LINE **q;
 
     for (p = local_id_root; p != NULL; p = p->p_next) {
-        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0)) { break; }
+        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0) && (type == p->p_type->var_type)) { break; }
     }
 
     if (p == NULL) {
         for (p = global_id_root; p != NULL; p = p->p_next) {
-            if ((strcmp(p->name, name) == 0)) { break; }
+            if ((strcmp(p->name, name) == 0) && (type == p->p_type->var_type)) { break; }
         }
     }
 
@@ -244,16 +219,29 @@ int isStandardType(int type) {
     }
 }
 
-int standartToArrayType(int stype) {
-    switch (stype) {
-        case TINTEGER:
-            return TPARRAYINT;
-        case TCHAR:
-            return TPARRAYCHAR;
-        case TBOOLEAN:
-            return TPARRAYBOOL;
-        default:
-            return errorWithReturn(getLineNum(), "unknown type");
+int keywordToType(int key, int is_array) {
+    if (is_array) {
+        switch (key) {
+            case TINTEGER:
+                return TPARRAYINT;
+            case TCHAR:
+                return TPARRAYCHAR;
+            case TBOOLEAN:
+                return TPARRAYBOOL;
+            default:
+                return errorWithReturn(getLineNum(), "unknown type");
+        }
+    } else {
+        switch (key) {
+            case TINTEGER:
+                return TPINT;
+            case TCHAR:
+                return TPCHAR;
+            case TBOOLEAN:
+                return TPBOOL;
+            default:
+                return errorWithReturn(getLineNum(), "unknown type");
+        }
     }
 }
 

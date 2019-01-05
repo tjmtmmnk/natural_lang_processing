@@ -4,6 +4,7 @@
 
 static int token;
 static int can_call; // flag for recursive call regulation
+static int global_type, local_type;
 static int tab_num;
 static int cnt_iteration, cnt_break;
 static int while_nest;
@@ -95,7 +96,7 @@ static int parseArrayType() {
         scanWithErrorJudge();
         int type;
         if ((type = parseStandardType(TRUE, size)) == ERROR) { return ERROR; }
-        return standartToArrayType(type);
+        return keywordToType(type, TRUE);
     }
     return errorWithReturn(getLineNum(), "'array' is not found");
 }
@@ -265,17 +266,25 @@ static int parseFactor() {
     if (token != TNAME && token != TNUMBER && token != TSTRING) {
         printWithTub(getStrAttr(), 0, FALSE);
     }
+    int type;
     switch (token) {
         case TNAME: {
             if (parseVariable() == ERROR) { return ERROR; }
+            if (local_type != 0) {
+                type = local_type;
+            } else if (global_type != 0) {
+                type = global_type;
+            }
             break;
         }
         case TFALSE:
         case TTRUE: {
+            type = TPBOOL;
             scanWithErrorJudge();
-            return TPBOOL;
+            break;
         }
         case TNUMBER: {
+            type = TPINT;
             printf("%s", getStrAttr());
             scanWithErrorJudge();
             break;
@@ -284,13 +293,15 @@ static int parseFactor() {
             printf("'");
             printf("%s", getStrAttr());
             printf("'");
+            if (strlen(getStrAttr()) > 1) { return errorWithReturn(getLineNum(), "too long words"); }
+            type = TPCHAR;
             scanWithErrorJudge();
             break;
         }
         case TLPAREN: {
             scanWithErrorJudge();
 
-            if (parseExpression() == ERROR) { return ERROR; }
+            if ((type = parseExpression()) == ERROR) { return ERROR; }
 
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
@@ -302,7 +313,7 @@ static int parseFactor() {
         case TNOT: {
             printf(" ");
             scanWithErrorJudge();
-            if (parseFactor() != TPBOOL) { return ERROR; } // TODO : Implementation of error
+            if ((type = parseFactor()) != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
             break;
         }
         case TINTEGER:
@@ -336,7 +347,7 @@ static int parseFactor() {
         default:
             return errorWithReturn(getLineNum(), "factor error");
     }
-    return OK;
+    return type;
 }
 
 static int parseConditionState() {
@@ -488,7 +499,7 @@ static int parseCallState() {
     printf(" ");
     scanWithErrorJudge();
 
-    updateExIDRefLine(getStrAttr(), getLineNum());
+    updateExIDRefLine(getStrAttr(), getLineNum(), TPPROC);
     if (!isPrevDefined(getStrAttr())) {
         return errorWithReturn(getLineNum(), "undefine variable");
     }
@@ -691,20 +702,25 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        int global_type;
-        int local_type;
-        updateExIDRefLine(getStrAttr(), getLineNum());
         global_type = getGlobalVarType(getStrAttr());
         local_type = getLocalVarType(getStrAttr());
+        int is_array = FALSE;
+        char name[100];
+        strcpy(name, getStrAttr());
+        int line = getLineNum();
 
         if (!isPrevDefined(getStrAttr())) {
             return errorWithReturn(getLineNum(), "undefine variable");
         }
         if (parseVarName() == ERROR) { return ERROR; }
         if (token == TLSQPAREN) {
+            is_array = TRUE;
             // if both local and global variable are not 'array' -> compile error
-            if (!((global_type != 0 && !isStandardType(global_type)) ||
-                  (local_type != 0 && !isStandardType(local_type)))) {
+            if (local_type != 0 && !isStandardType(local_type)) {
+                updateExIDRefLine(name, line, local_type);
+            } else if (global_type != 0 && !isStandardType(global_type)) {
+                updateExIDRefLine(getStrAttr(), getLineNum(), global_type);
+            } else {
                 return errorWithReturn(getLineNum(), "must be array type");
             }
             printf("[");
@@ -716,6 +732,14 @@ static int parseVariable() {
             printf("]");
             scanWithErrorJudge();
         }
+        if(!is_array) {
+            if (local_type != 0 && isStandardType(local_type)) {
+                updateExIDRefLine(name, line, local_type);
+            } else if (global_type != 0 && isStandardType(global_type)) {
+                updateExIDRefLine(name, line, global_type);
+            }
+        }
+
         return OK;
     }
     return errorWithReturn(getLineNum(), "undefineded the variable name");
@@ -754,6 +778,8 @@ int parseProgram() {
     cnt_break = 0;
     while_nest = 0;
     can_call = FALSE;
+    global_type = 0;
+    local_type = 0;
     initGlobalID();
     initLocalID();
 
