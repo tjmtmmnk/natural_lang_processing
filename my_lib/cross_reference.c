@@ -57,18 +57,23 @@ int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
         return 0;
     }
 
+    if ((p->p_ref = (struct LINE *) malloc(sizeof(struct LINE))) == NULL) {
+        fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
+        return 0;
+    }
+
     strcpy(np, name);
     p->name = np;
     p->def_line = def_line;
     p->has_set_type = has_set_type;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
     p->p_next = NULL;
+    p->p_type->array_size = 0;
 
+    strcpy(p->proc_name, proc_name);
     if (scope == GLOBAL) {
-        strcpy(p->proc_name, "global");
         q = &global_id_root;
     } else if (scope == LOCAL) {
-        strcpy(p->proc_name, proc_name);
         q = &local_id_root;
     }
 
@@ -131,7 +136,7 @@ int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
 int updateExIDTypeProcedure() {
     struct EXID *p, *q;
     struct TYPE *t;
-    for (p = local_id_root; p != NULL; p = p->p_next) {
+    for (p = global_id_root; p != NULL; p = p->p_next) {
         if ((strcmp(proc_name, p->proc_name) == 0) && (strcmp(p->name, p->proc_name) == 0)) { //procedure
             p->p_type->var_type = TPPROC;
             p->has_set_type = TRUE;
@@ -143,6 +148,7 @@ int updateExIDTypeProcedure() {
 
     t = p->p_type;
 
+    // make the list of formal params
     for (q = local_id_root; q != NULL; q = q->p_next) {
         if ((strcmp(proc_name, q->proc_name) == 0) && (strcmp(q->name, q->proc_name) > 0)) {
             if ((t->p_proc = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
@@ -159,16 +165,46 @@ int updateExIDTypeProcedure() {
     return 1;
 }
 
+int updateExIDRefLine(eScope scope, char *var_name, int ref_line) {
+    struct EXID *p;
+    struct LINE *node;
+    struct LINE **q;
+
+    if ((p = existExIDinTable(scope, var_name)) == NULL) { return 0; }
+
+    if ((node = (struct LINE *) malloc(sizeof(struct LINE))) == NULL) {
+        fprintf(stderr, "[ERROR] can't malloc in 'updateExIDRefLine'\n");
+        return 0;
+    }
+
+    node->ref_line = ref_line;
+    node->p_next = NULL;
+
+    for (q = &(p->p_ref); *q != NULL; q = &((*q)->p_next));
+
+    *q = node;
+
+    return 1;
+}
+
 void debugExIDTable() {
     struct EXID *p;
     struct TYPE *t;
     printf("global : \n");
     for (p = global_id_root; p != NULL; p = p->p_next) {
-        printf("%d\t%s\t%d\n", p->def_line, p->name, p->p_type->var_type);
+        printf("%d\t%d\t%s\t", p->def_line, p->p_type->array_size, p->name);
+        if (p->p_type->var_type == TPPROC) {
+            for (t = p->p_type; t != NULL; t = t->p_proc) {
+                printf("%d\t", t->var_type);
+            }
+        } else {
+            printf("%d\t", p->p_type->var_type);
+        }
+        printf("\n");
     }
     printf("\nlocal : \n");
     for (p = local_id_root; p != NULL; p = p->p_next) {
-        printf("%d\t%s\t%s\t", p->def_line, p->name, p->proc_name);
+        printf("%d\t%d\t%s\t%s\t", p->def_line, p->p_type->array_size, p->name, p->proc_name);
         if (p->p_type->var_type == TPPROC) {
             for (t = p->p_type; t != NULL; t = t->p_proc) {
                 printf("%d\t", t->var_type);

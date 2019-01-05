@@ -2,16 +2,17 @@
 #include "lexical_analysis.h"
 #include "cross_reference.h"
 
+static eScope scope;
 static int token;
 static int tab_num;
 static int cnt_iteration, cnt_break;
 static int while_nest;
-static int parseStandardType(eScope scope, int is_array, int has_set_type);
-static int parseArrayType(eScope scope);
-static int parseType(eScope scope);
-static int parseName(eScope scope);
-static int parseVarNames(eScope scope);
-static int parseVarDecler(eScope scope);
+static int parseStandardType(int is_array, int has_set_type);
+static int parseArrayType();
+static int parseType();
+static int parseName();
+static int parseVarNames();
+static int parseVarDecler();
 static int parseFormalParam();
 static int parseTerm();
 static int parseSimpleExpression();
@@ -50,7 +51,7 @@ static void printWithTub(char *str, int tab_num, int exist_space) {
     }
 }
 
-static int parseStandardType(eScope scope, int is_array, int size) {
+static int parseStandardType(int is_array, int size) {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         updateExIDType(scope, token, is_array, size);
         printf("%s", token_str[token]);
@@ -60,7 +61,7 @@ static int parseStandardType(eScope scope, int is_array, int size) {
     return errorWithReturn(getLineNum(), "'standard type' is not found");
 }
 
-static int parseArrayType(eScope scope) {
+static int parseArrayType() {
     if (token == TARRAY) {
         printf("array");
         scanWithErrorJudge();
@@ -91,27 +92,27 @@ static int parseArrayType(eScope scope) {
         printf("of ");
         scanWithErrorJudge();
 
-        if (parseStandardType(scope, TRUE, size) == ERROR) { return ERROR; }
+        if (parseStandardType(TRUE, size) == ERROR) { return ERROR; }
         return OK;
     }
     return errorWithReturn(getLineNum(), "'array' is not found");
 }
 
-static int parseType(eScope scope) {
+static int parseType() {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR || token == TARRAY) {
         if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-            if (parseStandardType(scope, FALSE, 0) == ERROR) { return ERROR; }
+            if (parseStandardType(FALSE, 0) == ERROR) { return ERROR; }
         }
 
         if (token == TARRAY) {
-            if (parseArrayType(scope) == ERROR) { return ERROR; }
+            if (parseArrayType() == ERROR) { return ERROR; }
         }
         return OK;
     }
     return errorWithReturn(getLineNum(), "type error");
 }
 
-static int parseName(eScope scope) {
+static int parseName() {
     if (token == TNAME) {
         printWithTub(getStrAttr(), 0, FALSE);
         registerExID(scope, getStrAttr(), getLineNum(), FALSE);
@@ -121,14 +122,14 @@ static int parseName(eScope scope) {
     return errorWithReturn(getLineNum(), "'NAME' is not found");
 }
 
-static int parseVarNames(eScope scope) {
+static int parseVarNames() {
     if (token == TNAME) {
-        if (parseName(scope) == ERROR) { return ERROR; }
+        if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (parseName(scope) == ERROR) { return ERROR; }
+            if (parseName() == ERROR) { return ERROR; }
         }
 
         return OK;
@@ -136,14 +137,13 @@ static int parseVarNames(eScope scope) {
     return errorWithReturn(getLineNum(), "'var name' is not found");
 }
 
-static int parseVarDecler(eScope scope) {
+static int parseVarDecler() {
     if (token == TVAR) {
         printWithTub("var\n", tab_num, FALSE);
         scanWithErrorJudge();
-
         tab_num++;
         printWithTub("", tab_num, FALSE);
-        if (parseVarNames(scope) == ERROR) { return ERROR; }
+        if (parseVarNames() == ERROR) { return ERROR; }
         tab_num--;
 
         if (token != TCOLON) {
@@ -152,7 +152,7 @@ static int parseVarDecler(eScope scope) {
         printf(": ");
         scanWithErrorJudge();
 
-        if (parseType(scope) == ERROR) { return ERROR; }
+        if (parseType() == ERROR) { return ERROR; }
 
         if (token != TSEMI) {
             return errorWithReturn(getLineNum(), "';' is not found");
@@ -163,7 +163,7 @@ static int parseVarDecler(eScope scope) {
         while (token == TNAME) {
             tab_num++;
             printWithTub("", tab_num, FALSE);
-            if (parseVarNames(scope) == ERROR) { return ERROR; }
+            if (parseVarNames() == ERROR) { return ERROR; }
             tab_num--;
 
             if (token != TCOLON) {
@@ -172,7 +172,7 @@ static int parseVarDecler(eScope scope) {
             printf(": ");
             scanWithErrorJudge();
 
-            if (parseType(scope) == ERROR) { return ERROR; }
+            if (parseType() == ERROR) { return ERROR; }
 
             if (token != TSEMI) {
                 return errorWithReturn(getLineNum(), "';' is not found");
@@ -188,10 +188,11 @@ static int parseVarDecler(eScope scope) {
 
 static int parseFormalParam() {
     if (token == TLPAREN) {
+        scope = LOCAL;
         scanWithErrorJudge();
         printf("(");
 
-        if (parseVarNames(LOCAL) == ERROR) { return ERROR; }
+        if (parseVarNames() == ERROR) { return ERROR; }
         printf(" ");
 
         if (token != TCOLON) {
@@ -200,13 +201,13 @@ static int parseFormalParam() {
         printf(": ");
         scanWithErrorJudge();
 
-        if (parseType(LOCAL) == ERROR) { return ERROR; }
+        if (parseType() == ERROR) { return ERROR; }
 
         while (token == TSEMI) {
             scanWithErrorJudge();
             printf("; ");
 
-            if (parseVarNames(LOCAL) == ERROR) { return ERROR; }
+            if (parseVarNames() == ERROR) { return ERROR; }
 
             if (token != TCOLON) {
                 return errorWithReturn(getLineNum(), "':' is not found");
@@ -214,7 +215,7 @@ static int parseFormalParam() {
             printf(" : ");
             scanWithErrorJudge();
 
-            if (parseType(LOCAL) == ERROR) { return ERROR; }
+            if (parseType() == ERROR) { return ERROR; }
         }
 
         if (token != TRPAREN) {
@@ -355,14 +356,16 @@ static int parseConditionState() {
 
 static int parseSubProgramDecler() {
     if (token == TPROCEDURE) {
+        scope = GLOBAL;
         printWithTub("procedure", tab_num, TRUE);
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
 
-        if (parseName(LOCAL) == ERROR) { return ERROR; }
+        if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
+            scope = LOCAL;
             if (parseFormalParam() == ERROR) { return ERROR; }
         }
 
@@ -374,7 +377,8 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         if (token == TVAR) {
-            if (parseVarDecler(LOCAL) == ERROR) { return ERROR; }
+            scope = LOCAL;
+            if (parseVarDecler() == ERROR) { return ERROR; }
         }
 
         if (parseCompoundState() == ERROR) { return ERROR; }
@@ -466,10 +470,11 @@ static int parseIterationState() {
 }
 
 static int parseCallState() {
+    scope = LOCAL;
     printf(" ");
     scanWithErrorJudge();
     setProcName("call");
-    if (parseName(LOCAL) == ERROR) { return ERROR; }
+    if (parseName() == ERROR) { return ERROR; }
 
     if (token == TLPAREN) {
         printf("(");
@@ -664,8 +669,9 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        if (parseName(SCOPE_NONE) == ERROR) { return ERROR; }
-
+        scope = SCOPE_NONE;
+        if (parseName() == ERROR) { return ERROR; }
+//        updateExIDRefLine()
         if (token == TLSQPAREN) {
             printf("[");
             scanWithErrorJudge();
@@ -685,7 +691,9 @@ static int parseBlock() {
     if (token == TVAR || token == TPROCEDURE || token == TBEGIN) {
         while (token == TVAR || token == TPROCEDURE) {
             if (token == TVAR) {
-                if (parseVarDecler(GLOBAL) == ERROR) { return ERROR; }
+                scope = GLOBAL;
+                setProcName("global");
+                if (parseVarDecler() == ERROR) { return ERROR; }
             }
             if (token == TPROCEDURE) {
                 if (parseSubProgramDecler() == ERROR) { return ERROR; }
