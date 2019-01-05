@@ -47,11 +47,13 @@ struct EXID {
 
 extern void initGlobalID();
 extern void initLocalID();
-extern int registerExID(eScope scope, char *name, int def_line, int is_formal_param);
-extern int updateExIDType(eScope scope, eKeyword type, int is_array, int size);
+extern int registerExID(char *name, int def_line, int is_formal_param);
+extern int updateExIDType(eKeyword type, int is_array, int size);
 extern int updateExIDTypeProcedure();
 extern int updateExIDRefLine(char *name, int ref_line);
 extern void debugExIDTable();
 extern void setProcName(char *name);
+extern void setScope(eScope _scope);
+int isPrevDefined(char *name);
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

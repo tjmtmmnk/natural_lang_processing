@@ -1,6 +1,7 @@
 #include "cross_reference.h"
 
-char *proc_name;
+static char *proc_name;
+static eScope scope;
 
 void initGlobalID() {
     global_id_root = NULL;
@@ -15,14 +16,18 @@ void setProcName(char *name) {
     strcpy(proc_name, name);
 }
 
-static struct EXID *existExIDinTable(eScope scope, char *name) {
+void setScope(eScope _scope) {
+    scope = _scope;
+}
+
+static struct EXID *existExIDinTable(eScope _scope, char *name) {
     struct EXID *p;
 
-    if (scope == GLOBAL) {
+    if (_scope == GLOBAL) {
         for (p = global_id_root; p != NULL; p = p->p_next) {
             if (strcmp(name, p->name) == 0) { return p; }
         }
-    } else if (scope == LOCAL) {
+    } else if (_scope == LOCAL) {
         for (p = local_id_root; p != NULL; p = p->p_next) {
             if ((strcmp(name, p->name) == 0) && (strcmp(proc_name, p->proc_name) == 0)) { return p; }
         }
@@ -30,7 +35,15 @@ static struct EXID *existExIDinTable(eScope scope, char *name) {
     return NULL;
 }
 
-int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
+// @param _scope : must be declered place's scope
+int isPrevDefined(char *name) {
+    struct EXID *p;
+    p = existExIDinTable(GLOBAL, name);
+    p = (p == NULL) ? existExIDinTable(LOCAL, name) : p;
+    return p != NULL;
+}
+
+int registerExID(char *name, int def_line, int has_set_type) {
     struct EXID *p, **q;
     char *np;
 
@@ -82,7 +95,7 @@ int registerExID(eScope scope, char *name, int def_line, int has_set_type) {
     return 1;
 }
 
-int updateExIDType(eScope scope, eKeyword type, int is_array, int size) {
+int updateExIDType(eKeyword type, int is_array, int size) {
     struct EXID *p;
     if (scope == LOCAL) {
         p = local_id_root;
@@ -169,13 +182,13 @@ int updateExIDRefLine(char *name, int ref_line) {
     struct LINE *node;
     struct LINE **q;
 
-    for (p = global_id_root; p != NULL; p = p->p_next) {
-        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, "global") == 0)) { break; }
+    for (p = local_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0)) { break; }
     }
 
     if (p == NULL) {
-        for (p = local_id_root; p != NULL; p = p->p_next) {
-            if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0)) { break; }
+        for (p = global_id_root; p != NULL; p = p->p_next) {
+            if ((strcmp(p->name, name) == 0)) { break; }
         }
     }
 

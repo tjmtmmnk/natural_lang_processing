@@ -2,7 +2,6 @@
 #include "lexical_analysis.h"
 #include "cross_reference.h"
 
-static eScope scope;
 static int token;
 static int tab_num;
 static int cnt_iteration, cnt_break;
@@ -53,7 +52,7 @@ static void printWithTub(char *str, int tab_num, int exist_space) {
 
 static int parseStandardType(int is_array, int size) {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-        updateExIDType(scope, token, is_array, size);
+        updateExIDType(token, is_array, size);
         printf("%s", token_str[token]);
         scanWithErrorJudge();
         return OK;
@@ -123,13 +122,13 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        registerExID(scope, getStrAttr(), getLineNum(), FALSE);
+        registerExID(getStrAttr(), getLineNum(), FALSE);
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            registerExID(scope, getStrAttr(), getLineNum(), FALSE);
+            registerExID(getStrAttr(), getLineNum(), FALSE);
             if (parseName() == ERROR) { return ERROR; }
         }
 
@@ -189,7 +188,7 @@ static int parseVarDecler() {
 
 static int parseFormalParam() {
     if (token == TLPAREN) {
-        scope = LOCAL;
+        setScope(LOCAL);
         scanWithErrorJudge();
         printf("(");
 
@@ -357,16 +356,16 @@ static int parseConditionState() {
 
 static int parseSubProgramDecler() {
     if (token == TPROCEDURE) {
-        scope = GLOBAL;
+        setScope(GLOBAL);
         printWithTub("procedure", tab_num, TRUE);
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-        registerExID(scope, getStrAttr(), getLineNum(), FALSE);
+        registerExID(getStrAttr(), getLineNum(), FALSE);
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
-            scope = LOCAL;
+            setScope(LOCAL);
             if (parseFormalParam() == ERROR) { return ERROR; }
         }
 
@@ -378,7 +377,7 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         if (token == TVAR) {
-            scope = LOCAL;
+            setScope(LOCAL);
             if (parseVarDecler() == ERROR) { return ERROR; }
         }
 
@@ -471,10 +470,14 @@ static int parseIterationState() {
 }
 
 static int parseCallState() {
-    scope = LOCAL;
+    setScope(LOCAL);
     printf(" ");
     scanWithErrorJudge();
     setProcName("call");
+    updateExIDRefLine(getStrAttr(), getLineNum());
+    if (!isPrevDefined(getStrAttr())) {
+        return errorWithReturn(getLineNum(), "undefine variable");
+    }
     if (parseName() == ERROR) { return ERROR; }
 
     if (token == TLPAREN) {
@@ -671,6 +674,9 @@ static int parseCompoundState() {
 static int parseVariable() {
     if (token == TNAME) {
         updateExIDRefLine(getStrAttr(), getLineNum());
+        if (!isPrevDefined(getStrAttr())) {
+            return errorWithReturn(getLineNum(), "undefine variable");
+        }
         if (parseName() == ERROR) { return ERROR; }
         if (token == TLSQPAREN) {
             printf("[");
@@ -691,7 +697,7 @@ static int parseBlock() {
     if (token == TVAR || token == TPROCEDURE || token == TBEGIN) {
         while (token == TVAR || token == TPROCEDURE) {
             if (token == TVAR) {
-                scope = GLOBAL;
+                setScope(GLOBAL);
                 setProcName("global");
                 if (parseVarDecler() == ERROR) { return ERROR; }
             }
