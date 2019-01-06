@@ -118,7 +118,7 @@ int updateExIDType(eKeyword type, int is_array, int size) {
             p->has_set_type = 1;
         }
     }
-    return 1;
+    return OK;
 }
 
 int updateExIDTypeProcedure() {
@@ -132,16 +132,17 @@ int updateExIDTypeProcedure() {
         }
     }
 
-    if (p == NULL) { return 0; }
+    if (p == NULL) { return errorWithReturn(getLineNum(), "can't update proc"); }
 
     t = p->p_type;
+    t->p_proc = NULL;
 
     // make the list of formal params
     for (q = local_id_root; q != NULL; q = q->p_next) {
-        if ((strcmp(proc_name, q->proc_name) == 0) && (strcmp(q->name, q->proc_name) > 0)) {
+        if ((strcmp(proc_name, q->proc_name) == 0) && (strcmp(q->name, q->proc_name) != 0)) {
             if ((t->p_proc = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
                 fprintf(stderr, "[ERROR] can't malloc in 'updateExIDTypeProcedure'\n");
-                return 0;
+                return ERROR;
             }
             t->p_proc->var_type = q->p_type->var_type;
             t->p_proc->array_size = q->p_type->array_size;
@@ -150,7 +151,7 @@ int updateExIDTypeProcedure() {
         }
     }
 
-    return 1;
+    return OK;
 }
 
 int updateExIDRefLine(char *name, int ref_line, int type) {
@@ -183,7 +184,7 @@ int updateExIDRefLine(char *name, int ref_line, int type) {
 
     *q = node;
 
-    return 1;
+    return OK;
 }
 
 int getLocalVarType(char *name) {
@@ -191,7 +192,7 @@ int getLocalVarType(char *name) {
     for (p = local_id_root; p != NULL; p = p->p_next) {
         if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0)) { return p->p_type->var_type; }
     }
-    return 0;
+    return 0; //not chenge!
 }
 
 int getGlobalVarType(char *name) {
@@ -199,7 +200,7 @@ int getGlobalVarType(char *name) {
     for (p = global_id_root; p != NULL; p = p->p_next) {
         if ((strcmp(p->name, name) == 0)) { return p->p_type->var_type; }
     }
-    return 0;
+    return 0; //not chenge!
 }
 
 int getArraySize(eScope _scope, char *name) {
@@ -229,7 +230,10 @@ int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types) {
     for (t = p->p_type; t != NULL; t = t->p_proc) {
         if (t->var_type != TPPROC) { param_num++; }
     }
-    if (exp_num != param_num) { return errorWithReturn(getLineNum(), "unmatch num of params"); }
+    if (exp_num != param_num) {
+        printf("aaa %d\t%d\n", exp_num, param_num);
+        return errorWithReturn(getLineNum(), "unmatch num of params");
+    }
 
     for (t = p->p_type; t != NULL; t = t->p_proc) {
         if (t->var_type != TPPROC) {
@@ -254,7 +258,7 @@ int isStandardType(int type) {
         case TPARRAYBOOL:
             return FALSE;
         default:
-            return errorWithReturn(getLineNum(), "unknown type");
+            return errorWithReturn(getLineNum(), "unknown type isStandardType");
     }
 }
 
@@ -268,7 +272,7 @@ int keywordToType(int key, int is_array) {
             case TBOOLEAN:
                 return TPARRAYBOOL;
             default:
-                return errorWithReturn(getLineNum(), "unknown type");
+                return errorWithReturn(getLineNum(), "unknown type keywordToType");
         }
     } else {
         switch (key) {
@@ -279,7 +283,7 @@ int keywordToType(int key, int is_array) {
             case TBOOLEAN:
                 return TPBOOL;
             default:
-                return errorWithReturn(getLineNum(), "unknown type");
+                return errorWithReturn(getLineNum(), "unknown type keywordToType");
         }
     }
 }
@@ -293,7 +297,7 @@ int arrayTypeToStandardType(int type) {
         case TPARRAYBOOL:
             return TPBOOL;
         default:
-            return errorWithReturn(getLineNum(), "unknown type");
+            return errorWithReturn(getLineNum(), "unknown type arrayTypeToStandardType");
     }
 }
 
@@ -382,9 +386,9 @@ void printCrossReference() {
         }
     }
 
-    printf("\t|\tName\t|\tType\t|\tDef\t|\tRef\t|\n");
+    printf("|\tName\t|\tType\t|\tDef\t|\tRef\t|\n");
     for (p = mergeSort(global_id_root); p != NULL; p = p->p_next) {
-        printf("\t|\t%s\t|\t", p->name);
+        printf("|\t%s\t|\t", p->name);
         if (p->p_type->var_type == TPPROC) {
             printf("procedure(");
             struct TYPE *temp;
