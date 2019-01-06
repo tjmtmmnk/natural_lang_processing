@@ -54,11 +54,12 @@ extern int updateExIDRefLine(char *name, int ref_line, int type);
 extern void debugExIDTable();
 extern void setProcName(char *name);
 extern void setScope(eScope _scope);
-int isPrevDefined(char *name);
-int isStandardType(int type);
-int getLocalVarType(char *name);
-int getGlobalVarType(char *name);
-int keywordToType(int key, int is_array);
-int arrayTypeToStandardType(int type);
+extern int isPrevDefined(char *name);
+extern int isStandardType(int type);
+extern int getLocalVarType(char *name);
+extern int getGlobalVarType(char *name);
+extern int keywordToType(int key, int is_array);
+extern int arrayTypeToStandardType(int type);
+extern int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types);
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

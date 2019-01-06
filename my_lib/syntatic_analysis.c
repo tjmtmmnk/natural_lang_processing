@@ -10,8 +10,7 @@ static int while_nest;
 static int parseStandardType(int is_array, int has_set_type);
 static int parseArrayType();
 static int parseType();
-static int parseVarName();
-static int parseProcName();
+static int parseName();
 static int parseVarNames();
 static int parseVarDecler();
 static int parseFormalParam();
@@ -24,7 +23,7 @@ static int parseConditionState();
 static int parseIterationState();
 static int parseCompoundState();
 static int parseCallState();
-static int parseExpressions();
+static int parseExpressions(int *exp_num, int *types);
 static int parseAssignState();
 static int parseInputState();
 static int parseOutputFormat();
@@ -115,16 +114,7 @@ static int parseType() {
     return errorWithReturn(getLineNum(), "type error");
 }
 
-static int parseVarName() {
-    if (token == TNAME) {
-        printWithTub(getStrAttr(), 0, FALSE);
-        scanWithErrorJudge();
-        return OK;
-    }
-    return errorWithReturn(getLineNum(), "'NAME' is not found");
-}
-
-static int parseProcName() {
+static int parseName() {
     if (token == TNAME) {
         printWithTub(getStrAttr(), 0, FALSE);
         scanWithErrorJudge();
@@ -136,13 +126,13 @@ static int parseProcName() {
 static int parseVarNames() {
     if (token == TNAME) {
         registerExID(getStrAttr(), getLineNum(), FALSE);
-        if (parseVarName() == ERROR) { return ERROR; }
+        if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
             registerExID(getStrAttr(), getLineNum(), FALSE);
-            if (parseVarName() == ERROR) { return ERROR; }
+            if (parseName() == ERROR) { return ERROR; }
         }
 
         return OK;
@@ -204,7 +194,6 @@ static int parseFormalParam() {
         setScope(LOCAL);
         scanWithErrorJudge();
         printf("(");
-
         if (parseVarNames() == ERROR) { return ERROR; }
         printf(" ");
 
@@ -220,7 +209,6 @@ static int parseFormalParam() {
         while (token == TSEMI) {
             scanWithErrorJudge();
             printf("; ");
-
             if (parseVarNames() == ERROR) { return ERROR; }
 
             if (token != TCOLON) {
@@ -393,7 +381,7 @@ static int parseSubProgramDecler() {
 
         setProcName(getStrAttr());
         registerExID(getStrAttr(), getLineNum(), FALSE);
-        if (parseProcName() == ERROR) { return ERROR; }
+        if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
             setScope(LOCAL);
@@ -441,14 +429,10 @@ static int parseSimpleExpression() {
         }
 
         if ((type = parseTerm()) == ERROR) { return ERROR; }
-        if (is_simple_term && (type != TPINT)) {
-            return errorWithReturn(getLineNum(), "must be integer");
-        }
-        if (is_simple_term) {
-            result_type = type;
-        }
+        if (!is_simple_term && (type != TPINT)) { return errorWithReturn(getLineNum(), "must be integer"); }
 
         while (token == TPLUS || token == TMINUS || token == TOR) {
+            is_simple_term = FALSE;
             int ope = token;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
@@ -464,6 +448,8 @@ static int parseSimpleExpression() {
 
             if ((type = parseTerm()) == ERROR) { return ERROR; }
         }
+
+        if (is_simple_term) { result_type = type; }
         return result_type;
     }
     return errorWithReturn(getLineNum(), "simple expression error");
@@ -493,17 +479,23 @@ static int parseExpression() {
     }
 }
 
-static int parseExpressions() {
+static int parseExpressions(int *exp_num, int *types) {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
-        if (parseExpression() == ERROR) { return ERROR; }
+        int type;
+        if ((type = parseExpression()) == ERROR) { return ERROR; }
+        types[*exp_num] = type;
+        *exp_num = *exp_num + 1;
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (parseExpression() == ERROR) { return ERROR; }
+            if ((type = parseExpression()) == ERROR) { return ERROR; }
+            types[*exp_num] = type;
+            *exp_num = *exp_num + 1;
         }
+
         return OK;
     }
     return errorWithReturn(getLineNum(), "expressions error");
@@ -531,22 +523,28 @@ static int parseCallState() {
     setScope(LOCAL);
     printf(" ");
     scanWithErrorJudge();
+    int types[100];
+    int exp_num = 0;
+    char name[100];
 
-    updateExIDRefLine(getStrAttr(), getLineNum(), TPPROC);
-    if (!isPrevDefined(getStrAttr())) {
+    strcpy(name, getStrAttr());
+    updateExIDRefLine(name, getLineNum(), TPPROC);
+    if (!isPrevDefined(name)) {
         return errorWithReturn(getLineNum(), "undefine variable");
     }
     if (!can_call) {
         return errorWithReturn(getLineNum(), "can't recursive call");
     }
 
-    if (parseProcName() == ERROR) { return ERROR; }
+    if (parseName() == ERROR) { return ERROR; }
 
     if (token == TLPAREN) {
         printf("(");
         scanWithErrorJudge();
 
-        if (parseExpressions() == ERROR) { return ERROR; }
+        if (parseExpressions(&exp_num, types) == ERROR) { return ERROR; }
+
+        checkMatchDeclerVarAndCallExpression(name, exp_num, types);
 
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
@@ -763,7 +761,7 @@ static int parseVariable() {
         if (!isPrevDefined(getStrAttr())) {
             return errorWithReturn(getLineNum(), "undefine variable");
         }
-        if (parseVarName() == ERROR) { return ERROR; }
+        if (parseName() == ERROR) { return ERROR; }
         if (token == TLSQPAREN) {
             is_array = TRUE;
             // if both local and global variable are not 'array' -> compile error

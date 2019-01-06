@@ -176,13 +176,11 @@ int updateExIDRefLine(char *name, int ref_line, int type) {
     node->ref_line = ref_line;
     node->p_next = NULL;
 
-    for (q = &(p->p_ref); *q != NULL; q = &((*q)->p_next)) {
-//        if ((*q)->ref_line == ref_line) { return 0; }
-    }
+    for (q = &(p->p_ref); *q != NULL; q = &((*q)->p_next));
 
     *q = node;
 
-    return p->p_type->var_type;
+    return 1;
 }
 
 int getLocalVarType(char *name) {
@@ -201,6 +199,35 @@ int getGlobalVarType(char *name) {
     return 0;
 }
 
+int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types) {
+    struct EXID *p;
+    struct TYPE *t;
+
+    for (p = local_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0) &&
+            (p->p_type->var_type == TPPROC)) { break; }
+    }
+
+    if (p == NULL) {
+        for (p = global_id_root; p != NULL; p = p->p_next) {
+            if ((strcmp(p->name, name) == 0) && (p->p_type->var_type == TPPROC)) { break; }
+        }
+    }
+
+    if (p == NULL) { return 0; }
+
+    int param_num = 0;
+    for (t = p->p_type; t != NULL; t = t->p_proc) {
+        if (t->var_type != TPPROC) {
+            if (t->var_type != types[param_num]) { return errorWithReturn(getLineNum(), "unmatch type"); }
+            param_num++;
+        }
+    }
+
+    if (exp_num != param_num) { return errorWithReturn(getLineNum(), "unmatch num of params"); }
+
+    return 1;
+}
 int isStandardType(int type) {
     switch (type) {
         case TINTEGER:
