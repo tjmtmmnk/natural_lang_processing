@@ -1,0 +1,2 @@
+[ERROR] line3 : array size is wrong(1~1024)
+

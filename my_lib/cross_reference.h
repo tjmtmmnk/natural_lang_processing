@@ -58,6 +58,7 @@ extern int isPrevDefined(char *name);
 extern int isStandardType(int type);
 extern int getLocalVarType(char *name);
 extern int getGlobalVarType(char *name);
+int getArraySize(eScope _scope, char *name);
 extern int keywordToType(int key, int is_array);
 extern int arrayTypeToStandardType(int type);
 extern int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types);

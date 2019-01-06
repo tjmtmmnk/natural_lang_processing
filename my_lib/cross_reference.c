@@ -47,28 +47,28 @@ int registerExID(char *name, int def_line, int has_set_type) {
     struct EXID *p, **q;
     char *np;
 
-    if ((p = existExIDinTable(scope, name)) != NULL && p->def_line == def_line) {
+    if ((p = existExIDinTable(scope, name)) != NULL) {
         return errorWithReturn(getLineNum(), "twice define");
     }
 
     if ((p = (struct EXID *) malloc(sizeof(struct EXID))) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
-        return 0;
+        return ERROR;
     }
 
     if ((np = (char *) malloc(strlen(name) + 1)) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
-        return 0;
+        return ERROR;
     }
 
     if ((p->p_type = (struct TYPE *) malloc(sizeof(struct TYPE))) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
-        return 0;
+        return ERROR;
     }
 
     if ((p->p_ref = (struct LINE *) malloc(sizeof(struct LINE))) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'registerExID'\n");
-        return 0;
+        return ERROR;
     }
 
     strcpy(np, name);
@@ -90,7 +90,7 @@ int registerExID(char *name, int def_line, int has_set_type) {
     for (; *q != NULL; q = &((*q)->p_next));
     *q = p;
 
-    return 1;
+    return OK;
 }
 
 int updateExIDType(eKeyword type, int is_array, int size) {
@@ -106,6 +106,9 @@ int updateExIDType(eKeyword type, int is_array, int size) {
     for (; p != NULL; p = p->p_next) {
         if (!p->has_set_type) {
             if (is_array) {
+                if (size < 1 || size > MAX_WORD_LENGTH) {
+                    return errorWithReturn(getLineNum(), "array size is wrong(1~1024)");
+                }
                 p->p_type->array_size = size;
                 p->p_type->var_type = keywordToType(type, TRUE);
             } else {
@@ -199,6 +202,12 @@ int getGlobalVarType(char *name) {
     return 0;
 }
 
+int getArraySize(eScope _scope, char *name) {
+    struct EXID *p;
+    if ((p = existExIDinTable(_scope, name)) == NULL) { return 0; }
+    return p->p_type->array_size;
+}
+
 int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types) {
     struct EXID *p;
     struct TYPE *t;
@@ -216,16 +225,18 @@ int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types) {
 
     if (p == NULL) { return 0; }
 
-    int param_num = 0;
+    int param_num = 0, i = 0;
     for (t = p->p_type; t != NULL; t = t->p_proc) {
-        if (t->var_type != TPPROC) {
-            if (t->var_type != types[param_num]) { return errorWithReturn(getLineNum(), "unmatch type"); }
-            param_num++;
-        }
+        if (t->var_type != TPPROC) { param_num++; }
     }
-
     if (exp_num != param_num) { return errorWithReturn(getLineNum(), "unmatch num of params"); }
 
+    for (t = p->p_type; t != NULL; t = t->p_proc) {
+        if (t->var_type != TPPROC) {
+            if (t->var_type != types[i]) { return errorWithReturn(getLineNum(), "unmatch type"); }
+            i++;
+        }
+    }
     return 1;
 }
 int isStandardType(int type) {

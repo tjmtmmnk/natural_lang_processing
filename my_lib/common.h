@@ -6,6 +6,9 @@
 #define TRUE 1
 #define FALSE 0
 
+#define ERROR -1
+#define OK 1
+
 extern int error(int line_num, char *mes);
 extern int errorWithReturn(int line_num, char *mes);
 

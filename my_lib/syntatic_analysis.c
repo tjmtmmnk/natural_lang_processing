@@ -4,10 +4,12 @@
 
 static int token;
 static int can_call; // flag for recursive call regulation
+static int is_array;
+static int access_idx;
 static int tab_num;
 static int cnt_iteration, cnt_break;
 static int while_nest;
-static int parseStandardType(int is_array, int has_set_type);
+static int parseStandardType(int _is_array, int has_set_type);
 static int parseArrayType();
 static int parseType();
 static int parseName();
@@ -51,10 +53,10 @@ static void printWithTub(char *str, int tab_num, int exist_space) {
     }
 }
 
-static int parseStandardType(int is_array, int size) {
+static int parseStandardType(int _is_array, int size) {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         int type = token;
-        updateExIDType(token, is_array, size);
+        if (updateExIDType(token, _is_array, size) == ERROR) { return ERROR; }
         printf("%s", token_str[token]);
         scanWithErrorJudge();
         return type;
@@ -125,13 +127,13 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        registerExID(getStrAttr(), getLineNum(), FALSE);
+        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            registerExID(getStrAttr(), getLineNum(), FALSE);
+            if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
             if (parseName() == ERROR) { return ERROR; }
         }
 
@@ -280,6 +282,9 @@ static int parseFactor() {
         }
         case TNUMBER: {
             type = TPINT;
+            if (is_array) {
+                sscanf(getStrAttr(), "%d", &access_idx);
+            }
             printf("%s", getStrAttr());
             scanWithErrorJudge();
             break;
@@ -380,7 +385,7 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-        registerExID(getStrAttr(), getLineNum(), FALSE);
+        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
@@ -392,7 +397,7 @@ static int parseSubProgramDecler() {
             return errorWithReturn(getLineNum(), "';' is not found");
         }
         printf(";\n");
-        updateExIDTypeProcedure();
+        if (updateExIDTypeProcedure() == ERROR) { return ERROR; }
         scanWithErrorJudge();
 
         if (token == TVAR) {
@@ -528,7 +533,7 @@ static int parseCallState() {
     char name[100];
 
     strcpy(name, getStrAttr());
-    updateExIDRefLine(name, getLineNum(), TPPROC);
+    if (updateExIDRefLine(name, getLineNum(), TPPROC) == ERROR) { return ERROR; }
     if (!isPrevDefined(name)) {
         return errorWithReturn(getLineNum(), "undefine variable");
     }
@@ -544,7 +549,7 @@ static int parseCallState() {
 
         if (parseExpressions(&exp_num, types) == ERROR) { return ERROR; }
 
-        checkMatchDeclerVarAndCallExpression(name, exp_num, types);
+        if (checkMatchDeclerVarAndCallExpression(name, exp_num, types) == ERROR) { return ERROR; }
 
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
@@ -750,48 +755,53 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        int global_type = getGlobalVarType(getStrAttr());
-        int local_type = getLocalVarType(getStrAttr());
-        int is_array = FALSE;
+        is_array = FALSE;
         int is_use_local = TRUE;
+        int line = getLineNum();
         char name[100];
         strcpy(name, getStrAttr());
-        int line = getLineNum();
+
+        int global_type = getGlobalVarType(name);
+        int local_type = getLocalVarType(name);
 
         if (!isPrevDefined(getStrAttr())) {
             return errorWithReturn(getLineNum(), "undefine variable");
         }
         if (parseName() == ERROR) { return ERROR; }
         if (token == TLSQPAREN) {
+            int array_size = 0;
             is_array = TRUE;
             // if both local and global variable are not 'array' -> compile error
-            if (local_type != 0 && !isStandardType(local_type)) {
+            if (local_type != 0 && !isStandardType(local_type)) { // local var is array type
                 is_use_local = TRUE;
-                updateExIDRefLine(name, line, local_type);
-                local_type = arrayTypeToStandardType(local_type);
-            } else if (global_type != 0 && !isStandardType(global_type)) {
+                if (updateExIDRefLine(name, line, local_type) == ERROR) { return ERROR; }
+                if ((local_type = arrayTypeToStandardType(local_type)) == ERROR) { return ERROR; }
+                array_size = getArraySize(LOCAL, name);
+            } else if (global_type != 0 && !isStandardType(global_type)) { // global var is array type
                 is_use_local = FALSE;
-                updateExIDRefLine(getStrAttr(), getLineNum(), global_type);
-                global_type = arrayTypeToStandardType(global_type);
+                if (updateExIDRefLine(name, line, global_type) == ERROR) { return ERROR; }
+                if ((global_type = arrayTypeToStandardType(global_type)) == ERROR) { return ERROR; }
+                array_size = getArraySize(GLOBAL, name);
             } else {
                 return errorWithReturn(getLineNum(), "must be array type");
             }
             printf("[");
             scanWithErrorJudge();
             if (parseExpression() == ERROR) { return ERROR; }
-            if (token != TRSQPAREN) {
-                return errorWithReturn(getLineNum(), "']' is not found");
-            }
+
+            if (access_idx >= array_size) { return errorWithReturn(getLineNum(), "bad index(0~max-1)"); }
+
+            if (token != TRSQPAREN) { return errorWithReturn(getLineNum(), "']' is not found"); }
             printf("]");
             scanWithErrorJudge();
         }
         if (!is_array) {
             if (local_type != 0 && isStandardType(local_type)) {
                 is_use_local = TRUE;
-                updateExIDRefLine(name, line, local_type);
+                if (updateExIDRefLine(name, line, local_type) == ERROR) { return ERROR; }
             } else if (global_type != 0 && isStandardType(global_type)) {
                 is_use_local = FALSE;
-                updateExIDRefLine(name, line, global_type);
+                if (updateExIDRefLine(name, line, global_type) == ERROR) { return ERROR; }
             } else {
                 return errorWithReturn(getLineNum(), "must be standard type");
             }
@@ -833,7 +843,9 @@ int parseProgram() {
     cnt_iteration = 0;
     cnt_break = 0;
     while_nest = 0;
+    access_idx = 0;
     can_call = FALSE;
+    is_array = FALSE;
     initGlobalID();
     initLocalID();
 
