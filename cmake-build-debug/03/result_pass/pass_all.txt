@@ -1,0 +1,14 @@
+|	Name	|	Type	|	Def	|	Ref	|
+|	data	|	array[20] of integer	|	16	|	21	25		|
+|	data:goukei	|	integer	|	19	|	24	26		|
+|	goukei	|	procedure(integer,integer)	|	17	|	37		|
+|	i	|	integer	|	33	|	39	40	42	42	44	45	45		|
+|	kazuyomikomi	|	procedure(integer,char)	|	2	|	36		|
+|	n	|	integer	|	32	|	36	37		|
+|	n:goukei	|	integer	|	17	|	22	27	27		|
+|	n:kazuyomikomi	|	integer	|	2	|	7		|
+|	s:goukei	|	integer	|	17	|	26	26		|
+|	sum	|	integer	|	10	|	13	37		|
+|	wakakidasi	|	procedure()	|	11	|	38		|
+|	x	|	char	|	34	|	36		|
+|	x:kazuyomikomi	|	char	|	2	|	4	5		|

@@ -4,10 +4,12 @@
 
 static int token;
 static int can_call; // flag for recursive call regulation
+static int is_array;
+static int access_idx;
 static int tab_num;
 static int cnt_iteration, cnt_break;
 static int while_nest;
-static int parseStandardType(int is_array, int has_set_type);
+static int parseStandardType(int _is_array, int has_set_type);
 static int parseArrayType();
 static int parseType();
 static int parseName();
@@ -35,9 +37,7 @@ static void scanWithErrorJudge();
 static void printWithTub(char *str, int tab_num, int exist_space);
 
 static void scanWithErrorJudge() {
-    if ((token = scanTokenOneEach()) == NONE) {
-        exit(1);
-    }
+    if ((token = scanTokenOneEach()) == NONE) { exit(1); }
 }
 
 static void printWithTub(char *str, int tab_num, int exist_space) {
@@ -51,10 +51,10 @@ static void printWithTub(char *str, int tab_num, int exist_space) {
     }
 }
 
-static int parseStandardType(int is_array, int size) {
+static int parseStandardType(int _is_array, int size) {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         int type = token;
-        updateExIDType(token, is_array, size);
+        if (updateExIDType(token, _is_array, size) == ERROR) { return ERROR; }
         printf("%s", token_str[token]);
         scanWithErrorJudge();
         return type;
@@ -67,33 +67,30 @@ static int parseArrayType() {
         printf("array");
         scanWithErrorJudge();
 
-        if (token != TLSQPAREN) {
-            return errorWithReturn(getLineNum(), "'[' is not found");
-        }
+        if (token != TLSQPAREN) { return errorWithReturn(getLineNum(), "'[' is not found"); }
+
         printf("[");
         scanWithErrorJudge();
 
-        if (token != TNUMBER) {
-            return errorWithReturn(getLineNum(), "'NUMBER' is not found");
-        }
+        if (token != TNUMBER) { return errorWithReturn(getLineNum(), "'NUMBER' is not found"); }
+
         printf("%s", getStrAttr());
         int size = 0;
         sscanf(getStrAttr(), "%d", &size);
         scanWithErrorJudge();
 
-        if (token != TRSQPAREN) {
-            return errorWithReturn(getLineNum(), "']' is not found");
-        }
+        if (token != TRSQPAREN) { return errorWithReturn(getLineNum(), "']' is not found"); }
+
         printf("] ");
         scanWithErrorJudge();
 
-        if (token != TOF) {
-            return errorWithReturn(getLineNum(), "'of' is not found");
-        }
+        if (token != TOF) { return errorWithReturn(getLineNum(), "'of' is not found"); }
+
         printf("of ");
         scanWithErrorJudge();
         int type;
         if ((type = parseStandardType(TRUE, size)) == ERROR) { return ERROR; }
+
         return keywordToType(type, TRUE);
     }
     return errorWithReturn(getLineNum(), "'array' is not found");
@@ -125,13 +122,13 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        registerExID(getStrAttr(), getLineNum(), FALSE);
+        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            registerExID(getStrAttr(), getLineNum(), FALSE);
+            if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
             if (parseName() == ERROR) { return ERROR; }
         }
 
@@ -149,17 +146,14 @@ static int parseVarDecler() {
         if (parseVarNames() == ERROR) { return ERROR; }
         tab_num--;
 
-        if (token != TCOLON) {
-            return errorWithReturn(getLineNum(), "':' is not found");
-        }
+        if (token != TCOLON) { return errorWithReturn(getLineNum(), "':' is not found"); }
+
         printf(": ");
         scanWithErrorJudge();
 
         if (parseType() == ERROR) { return ERROR; }
 
-        if (token != TSEMI) {
-            return errorWithReturn(getLineNum(), "';' is not found");
-        }
+        if (token != TSEMI) { return errorWithReturn(getLineNum(), "';' is not found"); }
         printf(";\n");
         scanWithErrorJudge();
 
@@ -169,17 +163,15 @@ static int parseVarDecler() {
             if (parseVarNames() == ERROR) { return ERROR; }
             tab_num--;
 
-            if (token != TCOLON) {
-                return errorWithReturn(getLineNum(), "':' is not found");
-            }
+            if (token != TCOLON) { return errorWithReturn(getLineNum(), "':' is not found"); }
+
             printf(": ");
             scanWithErrorJudge();
 
             if (parseType() == ERROR) { return ERROR; }
 
-            if (token != TSEMI) {
-                return errorWithReturn(getLineNum(), "';' is not found");
-            }
+            if (token != TSEMI) { return errorWithReturn(getLineNum(), "';' is not found"); }
+
             printf(";\n");
             scanWithErrorJudge();
         }
@@ -197,9 +189,8 @@ static int parseFormalParam() {
         if (parseVarNames() == ERROR) { return ERROR; }
         printf(" ");
 
-        if (token != TCOLON) {
-            return errorWithReturn(getLineNum(), "':' is not found");
-        }
+        if (token != TCOLON) { return errorWithReturn(getLineNum(), "':' is not found"); }
+
         printf(": ");
         scanWithErrorJudge();
         int type;
@@ -211,9 +202,8 @@ static int parseFormalParam() {
             printf("; ");
             if (parseVarNames() == ERROR) { return ERROR; }
 
-            if (token != TCOLON) {
-                return errorWithReturn(getLineNum(), "':' is not found");
-            }
+            if (token != TCOLON) { return errorWithReturn(getLineNum(), "':' is not found"); }
+
             printf(" : ");
             scanWithErrorJudge();
 
@@ -221,9 +211,8 @@ static int parseFormalParam() {
             if (!isStandardType(type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
         }
 
-        if (token != TRPAREN) {
-            return errorWithReturn(getLineNum(), "')' is not found");
-        }
+        if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
+
         printf(")");
         scanWithErrorJudge();
         return OK;
@@ -280,6 +269,9 @@ static int parseFactor() {
         }
         case TNUMBER: {
             type = TPINT;
+            if (is_array) {
+                sscanf(getStrAttr(), "%d", &access_idx);
+            }
             printf("%s", getStrAttr());
             scanWithErrorJudge();
             break;
@@ -298,9 +290,8 @@ static int parseFactor() {
 
             if ((type = parseExpression()) == ERROR) { return ERROR; }
 
-            if (token != TRPAREN) {
-                return errorWithReturn(getLineNum(), "')' is not found");
-            }
+            if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
+
             printf(")");
             scanWithErrorJudge();
             break;
@@ -316,21 +307,20 @@ static int parseFactor() {
         case TCHAR: {
             int exp_type;
             int standard_type = keywordToType(token, FALSE);
+            type = standard_type;
+
             scanWithErrorJudge();
 
-            if (token != TLPAREN) {
-                return errorWithReturn(getLineNum(), "'(' is not found");
-            }
+            if (token != TLPAREN) { return errorWithReturn(getLineNum(), "'(' is not found"); }
+
             printf("(");
             scanWithErrorJudge();
 
             if ((exp_type = parseExpression()) == ERROR) { return ERROR; }
-            if (exp_type != standard_type) { return errorWithReturn(getLineNum(), "must be same standard type"); }
-            type = standard_type;
+            if (!isStandardType(exp_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
-            if (token != TRPAREN) {
-                return errorWithReturn(getLineNum(), "')' is not found");
-            }
+            if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
+
             printf(")");
             scanWithErrorJudge();
             break;
@@ -349,18 +339,16 @@ static int parseConditionState() {
     if ((type = parseExpression()) == ERROR) { return ERROR; }
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
 
-    if (token != TTHEN) {
-        return errorWithReturn(getLineNum(), "'then' is not found");
-    }
+    if (token != TTHEN) { return errorWithReturn(getLineNum(), "'then' is not found"); }
+
     printf(" then\n");
     scanWithErrorJudge();
     tab_num++;
 
     if (parseState() == ERROR) { return ERROR; }
 
-    if (token != TELSE) {
-        tab_num--;
-    }
+    if (token != TELSE) { tab_num--; }
+
     if (token == TELSE) {
         printf("\n");
         tab_num--;
@@ -380,7 +368,7 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-        registerExID(getStrAttr(), getLineNum(), FALSE);
+        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
@@ -388,11 +376,10 @@ static int parseSubProgramDecler() {
             if (parseFormalParam() == ERROR) { return ERROR; }
         }
 
-        if (token != TSEMI) {
-            return errorWithReturn(getLineNum(), "';' is not found");
-        }
+        if (token != TSEMI) { return errorWithReturn(getLineNum(), "';' is not found"); }
+
         printf(";\n");
-        updateExIDTypeProcedure();
+        if (updateExIDTypeProcedure() == ERROR) { return ERROR; }
         scanWithErrorJudge();
 
         if (token == TVAR) {
@@ -402,9 +389,8 @@ static int parseSubProgramDecler() {
         can_call = FALSE;
         if (parseCompoundState() == ERROR) { return ERROR; }
 
-        if (token != TSEMI) {
-            return errorWithReturn(getLineNum(), "';' is not found");
-        }
+        if (token != TSEMI) { return errorWithReturn(getLineNum(), "';' is not found"); }
+
         printf(";\n");
 
         scanWithErrorJudge();
@@ -510,9 +496,8 @@ static int parseIterationState() {
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
     printf(" ");
 
-    if (token != TDO) {
-        return errorWithReturn(getLineNum(), "'do' is not found");
-    }
+    if (token != TDO) { return errorWithReturn(getLineNum(), "'do' is not found"); }
+
     printWithTub("do\n", 0, FALSE);
     scanWithErrorJudge();
     if (parseState() == ERROR) { return ERROR; }
@@ -528,13 +513,11 @@ static int parseCallState() {
     char name[100];
 
     strcpy(name, getStrAttr());
-    updateExIDRefLine(name, getLineNum(), TPPROC);
-    if (!isPrevDefined(name)) {
-        return errorWithReturn(getLineNum(), "undefine variable");
-    }
-    if (!can_call) {
-        return errorWithReturn(getLineNum(), "can't recursive call");
-    }
+    if (updateExIDRefLine(name, getLineNum(), TPPROC) == ERROR) { return ERROR; }
+
+    if (!isPrevDefined(name)) { return errorWithReturn(getLineNum(), "undefine variable"); }
+
+    if (!can_call) { return errorWithReturn(getLineNum(), "can't recursive call"); }
 
     if (parseName() == ERROR) { return ERROR; }
 
@@ -544,7 +527,7 @@ static int parseCallState() {
 
         if (parseExpressions(&exp_num, types) == ERROR) { return ERROR; }
 
-        checkMatchDeclerVarAndCallExpression(name, exp_num, types);
+        if (checkMatchDeclerVarAndCallExpression(name, exp_num, types) == ERROR) { return ERROR; }
 
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
@@ -567,9 +550,10 @@ static int parseAssignState() {
     scanWithErrorJudge();
 
     if ((right_type = parseExpression()) == ERROR) { return ERROR; }
+
     if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
-    if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and exp must be same type"); }
+    if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right must be same type"); }
 
     return OK;
 }
@@ -583,19 +567,18 @@ static int parseInputState() {
         scanWithErrorJudge();
 
         if ((type = parseVariable()) == ERROR) { return ERROR; }
-        if (!((type == TPINT) || (type == TCHAR))) { return errorWithReturn(getLineNum(), "must be integer or char"); }
+        if ((type != TPINT) && (type != TPCHAR)) { return errorWithReturn(getLineNum(), "must be integer or char"); }
 
         while (token == TCOMMA) {
             printWithTub(",", 0, TRUE);
             scanWithErrorJudge();
             if ((type = parseVariable()) == ERROR) { return ERROR; }
-            if (!((type == TPINT) || (type == TCHAR))) {
+            if ((type != TPINT) && (type != TPCHAR)) {
                 return errorWithReturn(getLineNum(), "must be integer or char");
             }
         }
-        if (token != TRPAREN) {
-            return errorWithReturn(getLineNum(), "')' is not found");
-        }
+        if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
+
         printWithTub(")", 0, FALSE);
         scanWithErrorJudge();
     }
@@ -616,9 +599,8 @@ static int parseOutputState() {
             scanWithErrorJudge();
             if (parseOutputFormat() == ERROR) { return ERROR; }
         }
-        if (token != TRPAREN) {
-            return errorWithReturn(getLineNum(), "')' is not found");
-        }
+        if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
+
         printWithTub(")", 0, FALSE);
         scanWithErrorJudge();
     }
@@ -731,13 +713,9 @@ static int parseCompoundState() {
             if (parseState() == ERROR) { return ERROR; }
         }
 
-        if (token == TEND) {
-            printf("\n");
-        }
+        if (token == TEND) { printf("\n"); }
 
-        if (token != TEND) {
-            return errorWithReturn(getLineNum(), "'end' is not found");
-        }
+        if (token != TEND) { return errorWithReturn(getLineNum(), "'end' is not found"); }
 
         tab_num--;
         printWithTub("end", tab_num, FALSE);
@@ -750,48 +728,55 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        int global_type = getGlobalVarType(getStrAttr());
-        int local_type = getLocalVarType(getStrAttr());
-        int is_array = FALSE;
+        is_array = FALSE;
         int is_use_local = TRUE;
+        int line = getLineNum();
         char name[100];
         strcpy(name, getStrAttr());
-        int line = getLineNum();
+
+        int global_type = getGlobalVarType(name);
+        int local_type = getLocalVarType(name);
 
         if (!isPrevDefined(getStrAttr())) {
             return errorWithReturn(getLineNum(), "undefine variable");
         }
         if (parseName() == ERROR) { return ERROR; }
         if (token == TLSQPAREN) {
+            int array_size = 0;
             is_array = TRUE;
+
             // if both local and global variable are not 'array' -> compile error
-            if (local_type != 0 && !isStandardType(local_type)) {
+            if (local_type != 0 && !isStandardType(local_type)) { // local var is array type
                 is_use_local = TRUE;
-                updateExIDRefLine(name, line, local_type);
-                local_type = arrayTypeToStandardType(local_type);
-            } else if (global_type != 0 && !isStandardType(global_type)) {
+                if (updateExIDRefLine(name, line, local_type) == ERROR) { return ERROR; }
+                if ((local_type = arrayTypeToStandardType(local_type)) == ERROR) { return ERROR; }
+                array_size = getArraySize(LOCAL, name);
+            } else if (global_type != 0 && !isStandardType(global_type)) { // global var is array type
                 is_use_local = FALSE;
-                updateExIDRefLine(getStrAttr(), getLineNum(), global_type);
-                global_type = arrayTypeToStandardType(global_type);
+                if (updateExIDRefLine(name, line, global_type) == ERROR) { return ERROR; }
+                if ((global_type = arrayTypeToStandardType(global_type)) == ERROR) { return ERROR; }
+                array_size = getArraySize(GLOBAL, name);
             } else {
                 return errorWithReturn(getLineNum(), "must be array type");
             }
+
             printf("[");
             scanWithErrorJudge();
             if (parseExpression() == ERROR) { return ERROR; }
-            if (token != TRSQPAREN) {
-                return errorWithReturn(getLineNum(), "']' is not found");
-            }
+
+            if (access_idx >= array_size) { return errorWithReturn(getLineNum(), "bad index(0~max-1)"); }
+
+            if (token != TRSQPAREN) { return errorWithReturn(getLineNum(), "']' is not found"); }
             printf("]");
             scanWithErrorJudge();
         }
         if (!is_array) {
             if (local_type != 0 && isStandardType(local_type)) {
                 is_use_local = TRUE;
-                updateExIDRefLine(name, line, local_type);
+                if (updateExIDRefLine(name, line, local_type) == ERROR) { return ERROR; }
             } else if (global_type != 0 && isStandardType(global_type)) {
                 is_use_local = FALSE;
-                updateExIDRefLine(name, line, global_type);
+                if (updateExIDRefLine(name, line, global_type) == ERROR) { return ERROR; }
             } else {
                 return errorWithReturn(getLineNum(), "must be standard type");
             }
@@ -813,9 +798,8 @@ static int parseBlock() {
                 if (parseSubProgramDecler() == ERROR) { return ERROR; }
             }
         }
-        if (token != TBEGIN) {
-            return errorWithReturn(getLineNum(), "'begin' is not found");
-        }
+        if (token != TBEGIN) { return errorWithReturn(getLineNum(), "'begin' is not found"); }
+
         can_call = TRUE;
         if (parseCompoundState() == ERROR) { return ERROR; }
         can_call = FALSE;
@@ -833,34 +817,32 @@ int parseProgram() {
     cnt_iteration = 0;
     cnt_break = 0;
     while_nest = 0;
+    access_idx = 0;
     can_call = FALSE;
+    is_array = FALSE;
     initGlobalID();
     initLocalID();
 
-    if (token != TPROGRAM) {
-        return errorWithReturn(getLineNum(), "'program' is not found");
-    }
+    if (token != TPROGRAM) { return errorWithReturn(getLineNum(), "'program' is not found"); }
+
     printWithTub("program", 0, TRUE);
     scanWithErrorJudge();
 
-    if (token != TNAME) {
-        return errorWithReturn(getLineNum(), "'program name' is not found");
-    }
+    if (token != TNAME) { return errorWithReturn(getLineNum(), "'program name' is not found"); }
+
     printWithTub(getStrAttr(), 0, FALSE);
     scanWithErrorJudge();
 
-    if (token != TSEMI) {
-        return errorWithReturn(getLineNum(), "';' is not found");
-    }
+    if (token != TSEMI) { return errorWithReturn(getLineNum(), "';' is not found"); }
+
     printWithTub(";\n", 0, FALSE);
     scanWithErrorJudge();
 
     tab_num++;
     if (parseBlock() == ERROR) { return ERROR; }
 
-    if (token != TDOT) {
-        return errorWithReturn(getLineNum(), "'.' is not found");
-    }
+    if (token != TDOT) { return errorWithReturn(getLineNum(), "'.' is not found"); }
+
     printf(".\n");
 
     if (cnt_iteration > 0 && cnt_break == 0) {
@@ -868,6 +850,6 @@ int parseProgram() {
         fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
         return ERROR;
     }
-    debugExIDTable();
+    printCrossReference();
     return OK;
 }

@@ -1,0 +1,2 @@
+[ERROR] line5 : must be integer or char
+

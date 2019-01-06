@@ -1,0 +1,2 @@
+[ERROR] line6 : left and right must be same type
+
