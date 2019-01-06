@@ -156,7 +156,8 @@ int updateExIDRefLine(char *name, int ref_line, int type) {
     struct LINE **q;
 
     for (p = local_id_root; p != NULL; p = p->p_next) {
-        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0) && (type == p->p_type->var_type)) { break; }
+        if ((strcmp(p->name, name) == 0) && (strcmp(p->proc_name, proc_name) == 0) &&
+            (type == p->p_type->var_type)) { break; }
     }
 
     if (p == NULL) {
@@ -242,6 +243,19 @@ int keywordToType(int key, int is_array) {
             default:
                 return errorWithReturn(getLineNum(), "unknown type");
         }
+    }
+}
+
+int arrayTypeToStandardType(int type) {
+    switch (type) {
+        case TPARRAYINT:
+            return TPINT;
+        case TPARRAYCHAR:
+            return TPCHAR;
+        case TPARRAYBOOL:
+            return TPBOOL;
+        default:
+            return errorWithReturn(getLineNum(), "unknown type");
     }
 }
 

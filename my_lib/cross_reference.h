@@ -59,5 +59,6 @@ int isStandardType(int type);
 int getLocalVarType(char *name);
 int getGlobalVarType(char *name);
 int keywordToType(int key, int is_array);
+int arrayTypeToStandardType(int type);
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

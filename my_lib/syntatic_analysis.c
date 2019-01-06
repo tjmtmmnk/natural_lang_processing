@@ -326,7 +326,8 @@ static int parseFactor() {
         case TINTEGER:
         case TBOOLEAN:
         case TCHAR: {
-            int _token = token;
+            int exp_type;
+            int standard_type = keywordToType(token, FALSE);
             scanWithErrorJudge();
 
             if (token != TLPAREN) {
@@ -335,20 +336,15 @@ static int parseFactor() {
             printf("(");
             scanWithErrorJudge();
 
-            if (parseExpression() == ERROR) { return ERROR; }
+            if ((exp_type = parseExpression()) == ERROR) { return ERROR; }
+            if (exp_type != standard_type) { return errorWithReturn(getLineNum(), "must be same standard type"); }
+            type = standard_type;
 
             if (token != TRPAREN) {
                 return errorWithReturn(getLineNum(), "')' is not found");
             }
             printf(")");
             scanWithErrorJudge();
-            if (_token == TINTEGER) {
-                return TPINT;
-            } else if (_token == TBOOLEAN) {
-                return TPBOOL;
-            } else if (_token == TCHAR) {
-                return TPCHAR;
-            }
             break;
         }
         default:
@@ -358,10 +354,12 @@ static int parseFactor() {
 }
 
 static int parseConditionState() {
+    int type;
     printf(" ");
     scanWithErrorJudge();
 
-    if (parseExpression() == ERROR) { return ERROR; }
+    if ((type = parseExpression()) == ERROR) { return ERROR; }
+    if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
 
     if (token != TTHEN) {
         return errorWithReturn(getLineNum(), "'then' is not found");
@@ -476,16 +474,20 @@ static int parseExpression() {
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
         int left_type, right_type;
+        int is_simple_expression = TRUE;
         if ((left_type = parseSimpleExpression()) == ERROR) { return ERROR; }
+        if (!isStandardType(left_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
+            is_simple_expression = FALSE;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
             scanWithErrorJudge(); //relational operator
             if ((right_type = parseSimpleExpression()) == ERROR) { return ERROR; }
+            if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
             if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right factor must be same"); }
         }
-        return OK;
+        return (is_simple_expression) ? left_type : TPBOOL;
     } else {
         return errorWithReturn(getLineNum(), "expression error");
     }
@@ -508,10 +510,12 @@ static int parseExpressions() {
 }
 
 static int parseIterationState() {
+    int type;
     scanWithErrorJudge();
 
     printf(" ");
-    if (parseExpression() == ERROR) { return ERROR; }
+    if ((type = parseExpression()) == ERROR) { return ERROR; }
+    if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
     printf(" ");
 
     if (token != TDO) {
@@ -554,8 +558,9 @@ static int parseCallState() {
 }
 
 static int parseAssignState() {
-    int type;
-    if ((type = parseVariable()) == ERROR) { return ERROR; }
+    int left_type, right_type;
+    if ((left_type = parseVariable()) == ERROR) { return ERROR; }
+    if (!isStandardType(left_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
     printf(" ");
     if (token != TASSIGN) {
         return errorWithReturn(getLineNum(), "':=' is not found");
@@ -563,23 +568,32 @@ static int parseAssignState() {
     printWithTub(":=", 0, TRUE);
     scanWithErrorJudge();
 
-    if (parseExpression() == ERROR) { return ERROR; }
+    if ((right_type = parseExpression()) == ERROR) { return ERROR; }
+    if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
+
+    if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and exp must be same type"); }
+
     return OK;
 }
 
 static int parseInputState() {
+    int type;
     scanWithErrorJudge();
 
     if (token == TLPAREN) {
         printWithTub("(", 0, FALSE);
         scanWithErrorJudge();
 
-        if (parseVariable() == ERROR) { return ERROR; }
+        if ((type = parseVariable()) == ERROR) { return ERROR; }
+        if (!((type == TPINT) || (type == TCHAR))) { return errorWithReturn(getLineNum(), "must be integer or char"); }
 
         while (token == TCOMMA) {
             printWithTub(",", 0, TRUE);
             scanWithErrorJudge();
-            if (parseVariable() == ERROR) { return ERROR; }
+            if ((type = parseVariable()) == ERROR) { return ERROR; }
+            if (!((type == TPINT) || (type == TCHAR))) {
+                return errorWithReturn(getLineNum(), "must be integer or char");
+            }
         }
         if (token != TRPAREN) {
             return errorWithReturn(getLineNum(), "')' is not found");
@@ -617,13 +631,19 @@ static int parseOutputFormat() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
+        int type;
         if (token == TSTRING) {
+            int str_len = strlen(getStrAttr());
+            if (!(str_len == 0 || str_len >= 2)) {
+                return errorWithReturn(getLineNum(), "string length wrong(0 or more than 2)");
+            }
             printWithTub("'", 0, FALSE);
             printWithTub(getStrAttr(), 0, FALSE);
             printWithTub("'", 0, FALSE);
             scanWithErrorJudge();
         } else {
-            if (parseExpression() == ERROR) { return ERROR; }
+            if ((type = parseExpression()) == ERROR) { return ERROR; }
+            if (!isStandardType(type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
             if (token == TCOLON) {
                 printf(":");
@@ -750,9 +770,11 @@ static int parseVariable() {
             if (local_type != 0 && !isStandardType(local_type)) {
                 is_use_local = TRUE;
                 updateExIDRefLine(name, line, local_type);
+                local_type = arrayTypeToStandardType(local_type);
             } else if (global_type != 0 && !isStandardType(global_type)) {
                 is_use_local = FALSE;
                 updateExIDRefLine(getStrAttr(), getLineNum(), global_type);
+                global_type = arrayTypeToStandardType(global_type);
             } else {
                 return errorWithReturn(getLineNum(), "must be array type");
             }
