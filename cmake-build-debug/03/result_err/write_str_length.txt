@@ -1,0 +1,2 @@
+[ERROR] line4 : string length wrong(0 or more than 2)
+

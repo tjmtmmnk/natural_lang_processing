@@ -1,0 +1,3 @@
+[ERROR] line5 : must be boolean
+
+

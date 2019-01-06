@@ -1,0 +1,2 @@
+[ERROR] line2 : must be standard type
+

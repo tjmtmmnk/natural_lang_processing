@@ -1,0 +1,2 @@
+[ERROR] line5 : bad index(0~max-1)
+

@@ -1,5 +1,5 @@
 program sample11pp;
-    procedure kazuyomikomi(n : integer; x: boolean);
+    procedure kazuyomikomi(n : integer);
     begin
         writeln('input the number of data');
         readln(n)
@@ -27,9 +27,9 @@ program sample11pp;
         end
     end;
     var
-        n: integer;x: boolean;
+        n: integer;
     begin
-        call kazuyomikomi(n,x);
+        call kazuyomikomi(n);
         call goukei(n * 2, sum);
         call wakakidasi
     end.

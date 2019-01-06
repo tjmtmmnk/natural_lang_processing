@@ -297,40 +297,113 @@ int arrayTypeToStandardType(int type) {
     }
 }
 
-void debugExIDTable() {
-    struct EXID *p;
+static struct EXID *mergeList(struct EXID *list1, struct EXID *list2) {
+    struct EXID dummy;
+    struct EXID *p = NULL;
+    p = &dummy;
+
+    while ((list1 != NULL) && (list2 != NULL)) {
+        if (strcmp(list1->name, list2->name) < 0) {
+            p->p_next = list1;
+            p = list1;
+            list1 = list1->p_next;
+        } else {
+            p->p_next = list2;
+            p = list2;
+            list2 = list2->p_next;
+        }
+    }
+    if (list1 == NULL) {
+        p->p_next = list2;
+    } else {
+        p->p_next = list1;
+    }
+    return (dummy.p_next);
+}
+
+static struct EXID *mergeSort(struct EXID *header) {
+    struct EXID *partition = NULL;
+    struct EXID *forward = header;
+    struct EXID *backward = header->p_next;
+
+    if ((header == NULL) || (header->p_next == NULL)) { return (header); }
+
+    if (backward != NULL) { backward = backward->p_next; }
+    while ((backward != NULL) && (backward->p_next != NULL)) {
+        forward = forward->p_next;
+        backward = backward->p_next->p_next;
+    }
+
+    partition = forward->p_next;
+    forward->p_next = NULL;
+
+    return (mergeList(mergeSort(header), mergeSort(partition)));
+}
+
+static void printType(int type, int size) {
+    switch (type) {
+        case TPARRAYINT:
+            printf("array[%d] of integer", size);
+            break;
+        case TPARRAYCHAR:
+            printf("array[%d] of char", size);
+            break;
+        case TPARRAYBOOL:
+            printf("array[%d] of boolean", size);
+            break;
+        case TPINT:
+            printf("integer");
+            break;
+        case TPCHAR:
+            printf("char");
+            break;
+        case TPBOOL:
+            printf("boolean");
+            break;
+        default:
+            break;
+    }
+}
+
+void printCrossReference() {
+    struct EXID *p, **q;
     struct TYPE *t;
     struct LINE *l;
-    printf("global : \n");
+
+    for (q = &global_id_root; *q != NULL; q = &((*q)->p_next));
+
+    *q = local_id_root;
+
     for (p = global_id_root; p != NULL; p = p->p_next) {
-        printf("%d\t%d\t%s\t%s\t", p->def_line, p->p_type->array_size, p->name, p->proc_name);
-        if (p->p_type->var_type == TPPROC) {
-            for (t = p->p_type; t != NULL; t = t->p_proc) {
-                printf("%d\t", t->var_type);
-            }
-        } else {
-            printf("%d\t", p->p_type->var_type);
+        if ((strcmp(p->name, p->proc_name) != 0) && (strcmp(p->proc_name, "global") != 0)) {
+            char temp[100];
+            snprintf(temp, 100, "%s:%s", p->name, p->proc_name);
+            strcpy(p->name, temp);
         }
-        printf("|\t");
-        for (l = p->p_ref; l != NULL; l = l->p_next) {
-            printf("%d\t", l->ref_line);
-        }
-        printf("\n");
     }
-    printf("\nlocal : \n");
-    for (p = local_id_root; p != NULL; p = p->p_next) {
-        printf("%d\t%d\t%s\t%s\t", p->def_line, p->p_type->array_size, p->name, p->proc_name);
+
+    printf("\t|\tName\t|\tType\t|\tDef\t|\tRef\t|\n");
+    for (p = mergeSort(global_id_root); p != NULL; p = p->p_next) {
+        printf("\t|\t%s\t|\t", p->name);
         if (p->p_type->var_type == TPPROC) {
-            for (t = p->p_type; t != NULL; t = t->p_proc) {
-                printf("%d\t", t->var_type);
+            printf("procedure(");
+            struct TYPE *temp;
+            for (t = p->p_type->p_proc; t != NULL; t = t->p_proc) {
+                temp = t->p_proc;
+                printType(t->var_type, 0);
+                if (temp != NULL) {
+                    printf(",");
+                }
             }
+            printf(")\t|\t");
         } else {
-            printf("%d\t", p->p_type->var_type);
+            printType(p->p_type->var_type, p->p_type->array_size);
+            printf("\t|\t");
         }
-        printf("|\t");
+        printf("%d\t|\t", p->def_line);
         for (l = p->p_ref; l != NULL; l = l->p_next) {
             printf("%d\t", l->ref_line);
         }
-        printf("\n");
+        printf("\t|\n");
     }
 }
