@@ -2,3 +2,7 @@
 cmake-build-debug/CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
+CMakeFiles
+natural_lang_process.cbp
+Makefile
+natural_lang_process

@@ -177,6 +177,33 @@ my_lib/common.c.s:
 	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/common.c.s
 .PHONY : my_lib/common.c.s
 
+my_lib/cross_reference.o: my_lib/cross_reference.c.o
+
+.PHONY : my_lib/cross_reference.o
+
+# target to build an object file
+my_lib/cross_reference.c.o:
+	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/cross_reference.c.o
+.PHONY : my_lib/cross_reference.c.o
+
+my_lib/cross_reference.i: my_lib/cross_reference.c.i
+
+.PHONY : my_lib/cross_reference.i
+
+# target to preprocess a source file
+my_lib/cross_reference.c.i:
+	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/cross_reference.c.i
+.PHONY : my_lib/cross_reference.c.i
+
+my_lib/cross_reference.s: my_lib/cross_reference.c.s
+
+.PHONY : my_lib/cross_reference.s
+
+# target to generate assembly for a file
+my_lib/cross_reference.c.s:
+	$(MAKE) -f CMakeFiles/natural_lang_process.dir/build.make CMakeFiles/natural_lang_process.dir/my_lib/cross_reference.c.s
+.PHONY : my_lib/cross_reference.c.s
+
 my_lib/id_list.o: my_lib/id_list.c.o
 
 .PHONY : my_lib/id_list.o
@@ -300,6 +327,9 @@ help:
 	@echo "... my_lib/common.o"
 	@echo "... my_lib/common.i"
 	@echo "... my_lib/common.s"
+	@echo "... my_lib/cross_reference.o"
+	@echo "... my_lib/cross_reference.i"
+	@echo "... my_lib/cross_reference.s"
 	@echo "... my_lib/id_list.o"
 	@echo "... my_lib/id_list.i"
 	@echo "... my_lib/id_list.s"

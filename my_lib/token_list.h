@@ -99,7 +99,6 @@ extern const struct SYMBOL {
     int token_number;
 } symbol[NUM_OF_SYMBOL];
 
-
 struct ID {
     char *name;
     int count;
@@ -111,6 +110,7 @@ extern const char split[NUM_OF_SPLIT];
 extern int token_counter[NUM_OF_TOKEN + 1];
 
 extern char *token_str[NUM_OF_TOKEN + 1]; /* string of each token */
+extern void initIDTable();
 
 
 #endif //NATURAL_LANG_PROCESS_TOKEN_LIST_H

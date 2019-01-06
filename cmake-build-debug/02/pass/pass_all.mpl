@@ -5,7 +5,7 @@ program change;  /* sample2a.mpl */ { compute change program. What is change? }
   var sum : integer; procedure wakakidasi; begin writeln('Sum of data = ', sum) end; var data : integer;
   procedure goukei(n, s : integer); var data : integer;
 begin
-s := 0; while (n > 0)* not 1 do begin readln(data); s := s + data; n := n - 1 end
+s := 0; while (n > 0)* not true do begin readln(data); s := s + data; n := n - 1 end
 end; var n : integer; flag : boolean; x : char; begin call kazuyomikomi(n,x); call goukei(n * 2, sum); call wakakidasi;
   writeln('please input change');  readln(n);    count := 0;
 while n>0 do begin
