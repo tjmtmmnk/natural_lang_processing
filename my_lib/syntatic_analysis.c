@@ -4,7 +4,6 @@
 
 static int token;
 static int can_call; // flag for recursive call regulation
-static int global_type, local_type;
 static int tab_num;
 static int cnt_iteration, cnt_break;
 static int while_nest;
@@ -248,16 +247,29 @@ static int parseTerm() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS || token == TSTRING) {
-        if (parseFactor() == ERROR) { return ERROR; }
+        int type, result_type;
+        int is_simple_factor = TRUE;
+        if ((type = parseFactor()) == ERROR) { return ERROR; }
 
         while (token == TSTAR || token == TDIV || token == TAND) {
+            int ope = token;
+            is_simple_factor = FALSE;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
             scanWithErrorJudge(); //multi operator
 
-            if (parseFactor() == ERROR) { return ERROR; }
+            if (ope == TAND && type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
+            if (ope == TAND) { result_type = TPBOOL; }
+            if ((ope == TSTAR || ope == TDIV) && (type != TPINT)) {
+                return errorWithReturn(getLineNum(), "must be integer");
+            }
+            if ((ope == TSTAR || ope == TDIV)) { result_type = TPINT; }
+
+            if ((type = parseFactor()) == ERROR) { return ERROR; }
         }
-        return OK;
+        if (is_simple_factor) { result_type = type; }
+
+        return result_type;
     }
     return errorWithReturn(getLineNum(), "term error");
 }
@@ -269,12 +281,7 @@ static int parseFactor() {
     int type;
     switch (token) {
         case TNAME: {
-            if (parseVariable() == ERROR) { return ERROR; }
-            if (local_type != 0) {
-                type = local_type;
-            } else if (global_type != 0) {
-                type = global_type;
-            }
+            if ((type = parseVariable()) == ERROR) { return ERROR; }
             break;
         }
         case TFALSE:
@@ -424,22 +431,42 @@ static int parseSimpleExpression() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
+        int is_simple_term = TRUE;
+        int type, result_type;
+
         if (token == TPLUS || token == TMINUS) {
+            is_simple_term = FALSE;
+            result_type = TPINT;
             printf(" ");
             printWithTub(token_str[token], 0, FALSE);
             scanWithErrorJudge();
         }
 
-        if (parseTerm() == ERROR) { return ERROR; }
+        if ((type = parseTerm()) == ERROR) { return ERROR; }
+        if (is_simple_term && (type != TPINT)) {
+            return errorWithReturn(getLineNum(), "must be integer");
+        }
+        if (is_simple_term) {
+            result_type = type;
+        }
 
         while (token == TPLUS || token == TMINUS || token == TOR) {
+            int ope = token;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
             scanWithErrorJudge(); //add operator
 
-            if (parseTerm() == ERROR) { return ERROR; }
+            if (ope == TOR && type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
+            if (ope == TOR) { result_type = TPBOOL; }
+
+            if ((ope == TPLUS || ope == TMINUS) && (type != TPINT)) {
+                return errorWithReturn(getLineNum(), "must be integer");
+            }
+            if ((ope == TPLUS || ope == TMINUS)) { result_type = TPINT; }
+
+            if ((type = parseTerm()) == ERROR) { return ERROR; }
         }
-        return OK;
+        return result_type;
     }
     return errorWithReturn(getLineNum(), "simple expression error");
 }
@@ -448,13 +475,15 @@ static int parseExpression() {
     if (token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TSTRING ||
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
-        if (parseSimpleExpression() == ERROR) { return ERROR; }
+        int left_type, right_type;
+        if ((left_type = parseSimpleExpression()) == ERROR) { return ERROR; }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
             scanWithErrorJudge(); //relational operator
-            if (parseSimpleExpression() == ERROR) { return ERROR; }
+            if ((right_type = parseSimpleExpression()) == ERROR) { return ERROR; }
+            if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right factor must be same"); }
         }
         return OK;
     } else {
@@ -525,7 +554,8 @@ static int parseCallState() {
 }
 
 static int parseAssignState() {
-    if (parseVariable() == ERROR) { return ERROR; }
+    int type;
+    if ((type = parseVariable()) == ERROR) { return ERROR; }
     printf(" ");
     if (token != TASSIGN) {
         return errorWithReturn(getLineNum(), "':=' is not found");
@@ -702,9 +732,10 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
-        global_type = getGlobalVarType(getStrAttr());
-        local_type = getLocalVarType(getStrAttr());
+        int global_type = getGlobalVarType(getStrAttr());
+        int local_type = getLocalVarType(getStrAttr());
         int is_array = FALSE;
+        int is_use_local = TRUE;
         char name[100];
         strcpy(name, getStrAttr());
         int line = getLineNum();
@@ -717,8 +748,10 @@ static int parseVariable() {
             is_array = TRUE;
             // if both local and global variable are not 'array' -> compile error
             if (local_type != 0 && !isStandardType(local_type)) {
+                is_use_local = TRUE;
                 updateExIDRefLine(name, line, local_type);
             } else if (global_type != 0 && !isStandardType(global_type)) {
+                is_use_local = FALSE;
                 updateExIDRefLine(getStrAttr(), getLineNum(), global_type);
             } else {
                 return errorWithReturn(getLineNum(), "must be array type");
@@ -732,15 +765,18 @@ static int parseVariable() {
             printf("]");
             scanWithErrorJudge();
         }
-        if(!is_array) {
+        if (!is_array) {
             if (local_type != 0 && isStandardType(local_type)) {
+                is_use_local = TRUE;
                 updateExIDRefLine(name, line, local_type);
             } else if (global_type != 0 && isStandardType(global_type)) {
+                is_use_local = FALSE;
                 updateExIDRefLine(name, line, global_type);
+            } else {
+                return errorWithReturn(getLineNum(), "must be standard type");
             }
         }
-
-        return OK;
+        return (is_use_local) ? local_type : global_type;
     }
     return errorWithReturn(getLineNum(), "undefineded the variable name");
 }
@@ -778,8 +814,6 @@ int parseProgram() {
     cnt_break = 0;
     while_nest = 0;
     can_call = FALSE;
-    global_type = 0;
-    local_type = 0;
     initGlobalID();
     initLocalID();
 
