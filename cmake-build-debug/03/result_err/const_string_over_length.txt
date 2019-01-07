@@ -1,2 +1,0 @@
-[ERROR] line6 : too long words
-

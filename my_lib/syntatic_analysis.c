@@ -280,7 +280,7 @@ static int parseFactor() {
             printf("'");
             printf("%s", getStrAttr());
             printf("'");
-            if (strlen(getStrAttr()) > 1) { return errorWithReturn(getLineNum(), "too long words"); }
+            if (strlen(getStrAttr()) != 1) { return errorWithReturn(getLineNum(), "wrong word length"); }
             type = TPCHAR;
             scanWithErrorJudge();
             break;

@@ -3,6 +3,6 @@ program sample11pp;
         n: char;
     begin
         writeln('avaljd');
-        n := 'abc';
+        n := '';
         n := 'a'
     end.
