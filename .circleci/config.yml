@@ -21,6 +21,3 @@ jobs:
       - run:
           name: Creating Binary Files
           command: 'cmake --build build'
-      - run:
-          name: Point Unit Testing
-          command: './natural_lang_process ./cmake-build-debug/03/'
