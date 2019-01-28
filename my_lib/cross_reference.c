@@ -16,6 +16,10 @@ void setProcName(char *name) {
     strcpy(proc_name, name);
 }
 
+const char *getProcName() {
+    return proc_name;
+}
+
 void setScope(eScope _scope) {
     scope = _scope;
 }
@@ -43,7 +47,7 @@ int isPrevDefined(char *name) {
     return p != NULL;
 }
 
-int registerExID(char *name, int def_line, int has_set_type, int is_formal_param) {
+int registerExID(char *name, int def_line, int has_set_type) {
     struct EXID *p, **q;
     char *np;
 
@@ -75,7 +79,6 @@ int registerExID(char *name, int def_line, int has_set_type, int is_formal_param
     p->name = np;
     p->def_line = def_line;
     p->has_set_type = has_set_type;
-    p->is_formal_param = is_formal_param;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
     p->p_next = NULL;
     p->p_ref = NULL;
@@ -384,7 +387,7 @@ void printCrossReference() {
         }
     }
 
-    printf("|\tName\t|\tType\t|\tDef\t|\tRef\t|\tis_formal\t|\n");
+    printf("|\tName\t|\tType\t|\tDef\t|\tRef\t|\n");
     for (p = mergeSort(global_id_root); p != NULL; p = p->p_next) {
         printf("|\t%s\t|\t", p->name);
         if (p->p_type->var_type == TPPROC) {
@@ -406,6 +409,6 @@ void printCrossReference() {
         for (l = p->p_ref; l != NULL; l = l->p_next) {
             printf("%d\t", l->ref_line);
         }
-        printf("\t|%d\t|\n", p->is_formal_param);
+        printf("|\n");
     }
 }

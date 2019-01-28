@@ -124,14 +124,31 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
+        int sp = 0; // stack pointer
+        char stack[100][MAX_WORD_LENGTH];
+        if (is_formal_param) {
+            char label[MAX_WORD_LENGTH] = {'\0'};
+            snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", getStrAttr(), getProcName());
+            strcpy(stack[sp++], label);
+        }
+        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
+            if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+            if (is_formal_param) {
+                char label[MAX_WORD_LENGTH] = {'\0'};
+                snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", getStrAttr(), getProcName());
+                strcpy(stack[sp++], label);
+            }
             if (parseName() == ERROR) { return ERROR; }
+        }
+
+        while (sp--) {
+            writeObjectCode("POP\tgr1");
+            writeObjectCode("ST\tgr1,\t%s", stack[sp]);
         }
 
         return OK;
@@ -187,6 +204,7 @@ static int parseFormalParam() {
     if (token == TLPAREN) {
         setScope(LOCAL);
         is_formal_param = TRUE;
+        writeObjectCode("POP\tgr2");
 
         scanWithErrorJudge();
         printf("(");
@@ -219,6 +237,8 @@ static int parseFormalParam() {
 
         printf(")");
         scanWithErrorJudge();
+
+        writeObjectCode("PUSH\t0,gr2");
 
         is_formal_param = FALSE;
         return OK;
@@ -387,7 +407,7 @@ static int parseSubProgramDecler() {
         setProcName(getStrAttr());
         writeVarLabel(getStrAttr());
 
-        if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
+        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
