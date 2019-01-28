@@ -405,7 +405,7 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-        writeVarLabel(getStrAttr());
+        writeVarLabel(getStrAttr(), TRUE);
 
         if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
@@ -870,6 +870,13 @@ int parseProgram() {
 
     if (token != TNAME) { return errorWithReturn(getLineNum(), "'program name' is not found"); }
 
+    writeVarLabel(getStrAttr(), FALSE);
+    writeObjectCode("START");
+    writeObjectCode("LAD gr0,0");
+    writeObjectCode("CALL L0001");
+    writeObjectCode("CALL FLUSH");
+    writeObjectCode("SVC 0");
+
     printWithTub(getStrAttr(), 0, FALSE);
     scanWithErrorJudge();
 
@@ -890,6 +897,7 @@ int parseProgram() {
         fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
         return ERROR;
     }
+    writeLibrary();
     printCrossReference();
     return OK;
 }
