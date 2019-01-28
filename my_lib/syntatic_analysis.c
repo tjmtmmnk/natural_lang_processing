@@ -1,10 +1,12 @@
 #include "syntatic_analysis.h"
 #include "lexical_analysis.h"
 #include "cross_reference.h"
+#include "output_objectfile.h"
 
 static int token;
 static int can_call; // flag for recursive call regulation
 static int is_array;
+static int is_formal_param;
 static int access_idx;
 static int tab_num;
 static int cnt_iteration, cnt_break;
@@ -122,13 +124,13 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+        if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+            if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
             if (parseName() == ERROR) { return ERROR; }
         }
 
@@ -184,6 +186,8 @@ static int parseVarDecler() {
 static int parseFormalParam() {
     if (token == TLPAREN) {
         setScope(LOCAL);
+        is_formal_param = TRUE;
+
         scanWithErrorJudge();
         printf("(");
         if (parseVarNames() == ERROR) { return ERROR; }
@@ -215,6 +219,8 @@ static int parseFormalParam() {
 
         printf(")");
         scanWithErrorJudge();
+
+        is_formal_param = FALSE;
         return OK;
     }
     return errorWithReturn(getLineNum(), "'(' is not found");
@@ -229,11 +235,14 @@ static int parseTerm() {
         if ((type = parseFactor()) == ERROR) { return ERROR; }
 
         while (token == TSTAR || token == TDIV || token == TAND) {
-            int ope = token;
+            int ope = token; //multi operator
             is_simple_factor = FALSE;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
-            scanWithErrorJudge(); //multi operator
+            scanWithErrorJudge();
+
+            writeObjectCode("POP\tgr2");
+            writeObjectCode("POP\tgr1");
 
             if (ope == TAND && type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
             if (ope == TAND) { result_type = TPBOOL; }
@@ -241,6 +250,11 @@ static int parseTerm() {
                 return errorWithReturn(getLineNum(), "must be integer");
             }
             if ((ope == TSTAR || ope == TDIV)) { result_type = TPINT; }
+
+            if (ope == TAND) { writeObjectCode("AND\tgr1,gr2"); }
+            else if (ope == TSTAR) { writeObjectCode("MULA\tgr1,gr2"); }
+            else if (ope == TDIV) { writeObjectCode("DIVA\tgr1,gr2"); }
+            writeObjectCode("PUSH\t0,gr1");
 
             if ((type = parseFactor()) == ERROR) { return ERROR; }
         }
@@ -339,6 +353,9 @@ static int parseConditionState() {
     if ((type = parseExpression()) == ERROR) { return ERROR; }
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
 
+    writeObjectCode("POP\tgr1");
+    writeObjectCode("CPA\tgr1,gr0");
+
     if (token != TTHEN) { return errorWithReturn(getLineNum(), "'then' is not found"); }
 
     printf(" then\n");
@@ -368,7 +385,9 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+        writeVarLabel(getStrAttr());
+
+        if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
@@ -820,6 +839,7 @@ int parseProgram() {
     access_idx = 0;
     can_call = FALSE;
     is_array = FALSE;
+    is_formal_param = FALSE;
     initGlobalID();
     initLocalID();
 

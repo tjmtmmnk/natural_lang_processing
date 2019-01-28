@@ -9,19 +9,20 @@ static int is_initialized = 0, is_set_filename = 0;
  */
 void setOutputFileName(const char *name) {
     char *idx;
-    char *out_filename = (char *) malloc(sizeof(name) + 10);
+    file_name = (char *) malloc(sizeof(name) + 10);
     const char mpl[] = ".mpl";
     idx = strstr(name, mpl);
     int range = (int) (idx - name);
-    strncpy(out_filename, name + 0, range);
-    out_filename[range] = '\0'; // add null char to end
-    strcat(out_filename, ".csl");
-    printf("aaa %s\n", out_filename);
+    strncpy(file_name, name + 0, range);
+    file_name[range] = '\0'; // add null char to end
     is_set_filename = 1;
 }
 
 void initializeCompiler() {
-    fp = fopen(file_name, "a");
+    char out_file_name[MAX_WORD_LENGTH] = {'\0'};
+    strcpy(out_file_name, file_name);
+    strcat(out_file_name, ".csl");
+    fp = fopen(out_file_name, "a");
     if (fp == NULL) {
         fprintf(stderr, "Can't open file\n");
         exit(1);
@@ -29,12 +30,19 @@ void initializeCompiler() {
     is_initialized = 1;
 }
 
-void write(const char *restrict format, ...) {
+void writeObjectCode(const char *restrict format, ...) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
+    fprintf(fp, "\t");
     va_list ap;
     va_start(ap, format);
     vfprintf(fp, format, ap);
     va_end(ap);
+    fprintf(fp, "\n");
+}
+
+void writeVarLabel(const char *label) {
+    if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
+    fprintf(fp, "$%s\n", label);
 }
 
 void finalizeCompiler() {

@@ -43,7 +43,7 @@ int isPrevDefined(char *name) {
     return p != NULL;
 }
 
-int registerExID(char *name, int def_line, int has_set_type) {
+int registerExID(char *name, int def_line, int has_set_type, int is_formal_param) {
     struct EXID *p, **q;
     char *np;
 
@@ -75,6 +75,7 @@ int registerExID(char *name, int def_line, int has_set_type) {
     p->name = np;
     p->def_line = def_line;
     p->has_set_type = has_set_type;
+    p->is_formal_param = is_formal_param;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
     p->p_next = NULL;
     p->p_ref = NULL;
@@ -230,10 +231,7 @@ int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types) {
     for (t = p->p_type; t != NULL; t = t->p_proc) {
         if (t->var_type != TPPROC) { param_num++; }
     }
-    if (exp_num != param_num) {
-        printf("aaa %d\t%d\n", exp_num, param_num);
-        return errorWithReturn(getLineNum(), "unmatch num of params");
-    }
+    if (exp_num != param_num) { return errorWithReturn(getLineNum(), "unmatch num of params"); }
 
     for (t = p->p_type; t != NULL; t = t->p_proc) {
         if (t->var_type != TPPROC) {
@@ -386,7 +384,7 @@ void printCrossReference() {
         }
     }
 
-    printf("|\tName\t|\tType\t|\tDef\t|\tRef\t|\n");
+    printf("|\tName\t|\tType\t|\tDef\t|\tRef\t|\tis_formal\t|\n");
     for (p = mergeSort(global_id_root); p != NULL; p = p->p_next) {
         printf("|\t%s\t|\t", p->name);
         if (p->p_type->var_type == TPPROC) {
@@ -408,6 +406,6 @@ void printCrossReference() {
         for (l = p->p_ref; l != NULL; l = l->p_next) {
             printf("%d\t", l->ref_line);
         }
-        printf("\t|\n");
+        printf("\t|%d\t|\n", p->is_formal_param);
     }
 }

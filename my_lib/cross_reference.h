@@ -41,13 +41,14 @@ struct EXID {
     struct TYPE *p_type;
     int has_set_type;
     int def_line;
+    int is_formal_param;
     struct LINE *p_ref; //correspond to muitiple reference
     struct EXID *p_next;
 } *global_id_root, *local_id_root;
 
 extern void initGlobalID();
 extern void initLocalID();
-extern int registerExID(char *name, int def_line, int is_formal_param);
+extern int registerExID(char *name, int def_line, int has_set_type, int is_formal_param);
 extern int updateExIDType(eKeyword type, int is_array, int size);
 extern int updateExIDTypeProcedure();
 extern int updateExIDRefLine(char *name, int ref_line, int type);

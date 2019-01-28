@@ -5,9 +5,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "string.h"
+#include "lexical_analysis.h"
 
 extern void setOutputFileName(const char *name);
-extern void write(const char *format,...);
+extern void writeObjectCode(const char *format, ...);
+extern void writeVarLabel(const char *label);
 extern void initializeCompiler();
 extern void finalizeCompiler();
 
