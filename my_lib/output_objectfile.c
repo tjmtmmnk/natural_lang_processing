@@ -1,4 +1,5 @@
 #include "output_objectfile.h"
+#include "cross_reference.h"
 
 static char *file_name;
 static FILE *fp;
@@ -40,11 +41,34 @@ void writeObjectCode(const char *restrict format, ...) {
     fprintf(fp, "\n");
 }
 
+void writeObjectCodeWithoutTab(const char *restrict format, ...) {
+    if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(fp, format, ap);
+    va_end(ap);
+    fprintf(fp, "\n");
+}
+
 void writeVarLabel(const char *label, int is_newline) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
     fprintf(fp, "$%s", label);
     if (is_newline) {
         fprintf(fp, "\n");
+    }
+}
+
+void writeMalloc() {
+    struct EXID *p = getMergedList();
+    for (; p != NULL; p = p->p_next) {
+        if (p->p_type->var_type != TPPROC) {
+            writeVarLabel(p->name, FALSE);
+            if (p->p_type->array_size > 0) {
+                writeObjectCode("\tDS\t%d", p->p_type->array_size);
+            } else {
+                writeObjectCode("\tDC\t0");
+            }
+        }
     }
 }
 
@@ -287,6 +311,22 @@ void writeLibrary() {
     writeObjectCode("ST  gr0, INP");
     writeObjectCode("ST  gr0, RPBBUF");
     writeObjectCode("RET");
+
+    writeObjectCodeWithoutTab("ONE    DC  1");
+    writeObjectCodeWithoutTab("SIX    DC  6");
+    writeObjectCodeWithoutTab("TEN    DC  10");
+    writeObjectCodeWithoutTab("SPACE    DC  #0020");
+    writeObjectCodeWithoutTab("MINUS    DC  #002D");
+    writeObjectCodeWithoutTab("TAB    DC  #0009");
+    writeObjectCodeWithoutTab("ZERO    DC  #0030");
+    writeObjectCodeWithoutTab("NINE    DC  #0039");
+    writeObjectCodeWithoutTab("NEWLINE    DC  #000A");
+    writeObjectCodeWithoutTab("INTBUF    DS  8");
+    writeObjectCodeWithoutTab("OBUFSIZE  DC  0");
+    writeObjectCodeWithoutTab("IBUFSIZE  DC  0");
+    writeObjectCodeWithoutTab("INP    DC  0");
+    writeObjectCodeWithoutTab("OBUF    DS  257");
+    writeObjectCodeWithoutTab("IBUF    DS  257");
 }
 
 void finalizeCompiler() {

@@ -870,6 +870,7 @@ int parseProgram() {
 
     if (token != TNAME) { return errorWithReturn(getLineNum(), "'program name' is not found"); }
 
+    writeVarLabel("", FALSE); // dummy for $$[label]
     writeVarLabel(getStrAttr(), FALSE);
     writeObjectCode("START");
     writeObjectCode("LAD gr0,0");
@@ -897,7 +898,8 @@ int parseProgram() {
         fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
         return ERROR;
     }
+    writeMalloc();
     writeLibrary();
-    printCrossReference();
+//    printCrossReference();
     return OK;
 }

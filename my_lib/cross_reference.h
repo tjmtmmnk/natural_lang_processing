@@ -64,5 +64,6 @@ int getArraySize(eScope _scope, char *name);
 extern int keywordToType(int key, int is_array);
 extern int arrayTypeToStandardType(int type);
 extern int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types);
+extern struct EXID *getMergedList();
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

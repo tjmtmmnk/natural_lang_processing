@@ -370,6 +370,21 @@ static void printType(int type, int size) {
     }
 }
 
+struct EXID *getMergedList() {
+    struct EXID *p, **q;
+    for (q = &global_id_root; *q != NULL; q = &((*q)->p_next));
+    *q = local_id_root;
+
+    for (p = global_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, p->proc_name) != 0) && (strcmp(p->proc_name, "global") != 0)) {
+            char temp[100];
+            snprintf(temp, 100, "%s%%%s", p->name, p->proc_name);
+            strcpy(p->name, temp);
+        }
+    }
+    return mergeSort(global_id_root);
+}
+
 void printCrossReference() {
     struct EXID *p, **q;
     struct TYPE *t;
