@@ -4,6 +4,7 @@
 static char *file_name;
 static FILE *fp;
 static int is_initialized = 0, is_set_filename = 0;
+static int label = 0;
 
 /*
  * :param name: *.mpl
@@ -50,12 +51,24 @@ void writeObjectCodeWithoutTab(const char *restrict format, ...) {
     fprintf(fp, "\n");
 }
 
+void writeObjectCodeRaw(const char *restrict format, ...) {
+    if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(fp, format, ap);
+    va_end(ap);
+}
+
 void writeVarLabel(const char *label, int is_newline) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
     fprintf(fp, "$%s", label);
     if (is_newline) {
         fprintf(fp, "\n");
     }
+}
+
+void writeJumpLabel(int num) {
+    writeObjectCodeWithoutTab("L%04d", num);
 }
 
 void writeMalloc() {
@@ -70,6 +83,107 @@ void writeMalloc() {
             }
         }
     }
+}
+
+void writeSimpleExpObjectCode(int ope) {
+    writeObjectCode("POP\tgr2");
+    writeObjectCode("POP\tgr1");
+    switch (ope) {
+        case TPLUS:
+            writeObjectCode("ADDA\tgr1,gr2");
+            writeObjectCode("JOV\tEOVF");
+            break;
+        case TMINUS:
+            writeObjectCode("SUBA\tgr1,gr2");
+            writeObjectCode("JOV\tEOVF");
+            break;
+        case TOR:
+            writeObjectCode("OR\tgr1,gr2");
+            break;
+    }
+    writeObjectCode("PUSH\t0,gr1");
+}
+
+void writeExpObjectCode(int ope) {
+    writeObjectCode("POP\tgr2"); //
+    writeObjectCode("POP\tgr1");
+    writeObjectCode("CPA\tgr1,gr2");
+
+    switch (ope) {
+        case TEQUAL: // =
+            writeObjectCodeRaw("\tJZE\t");
+            writeJumpLabel(label + 1);
+            break;
+        case TNOTEQ: // <>
+            writeObjectCodeRaw("\tJNZ\t");
+            writeJumpLabel(label + 1);
+            break;
+        case TLE: // <
+            writeObjectCodeRaw("\tJMI\t");
+            writeJumpLabel(label + 1);
+            break;
+        case TLEEQ: // <=
+            writeObjectCodeRaw("\tJMI\t");
+            writeJumpLabel(label + 1);
+            writeObjectCodeRaw("\tJZE\t");
+            writeJumpLabel(label + 1);
+            break;
+        case TGR: // >
+            writeObjectCodeRaw("\tJPL\t");
+            writeJumpLabel(label + 1);
+            break;
+        case TGREQ: // >=
+            writeObjectCodeRaw("\tJPL\t");
+            writeJumpLabel(label + 1);
+            writeObjectCodeRaw("\tJZE\t");
+            writeJumpLabel(label + 1);
+            break;
+    }
+
+    writeObjectCode("LD\tgr1,gr0");
+    writeObjectCodeRaw("\tJUMP\t");
+    writeJumpLabel(label + 2);
+
+    writeJumpLabel(label + 1);
+    writeObjectCode("LAD\tgr1,1");
+
+    writeJumpLabel(label + 2);
+    writeObjectCode("CPA\tgr1,gr0");
+    writeObjectCodeRaw("\tJZE\t");
+    writeJumpLabel(label);
+}
+
+// WRITELINE is run in parseOutputState() if need
+void writeOutputObjectCode(int type) {
+    writeObjectCode("LD\tgr2,gr0");
+    switch (type) {
+        case TPINT:
+            writeObjectCode("CALL\tWRITEINT");
+            break;
+        case TPCHAR:
+            writeObjectCode("CALL\tWRITECHAR");
+            break;
+        case TPBOOL:
+            writeObjectCode("CALL\tWRITEBOOL");
+            break;
+    }
+}
+
+int getIncLabel() {
+    return ++label;
+}
+
+int getDecLabel() {
+    if (label > 0) {
+        return --label;
+    } else {
+        fprintf(stderr, "label is minus");
+        return ERROR;
+    }
+}
+
+int getLabel() {
+    return label;
 }
 
 void writeLibrary() {

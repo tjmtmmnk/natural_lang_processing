@@ -17,9 +17,7 @@ begin
 	while n > 0 do begin
 		readln(data);
 		s := s + data;
-		n := n - 1;
-		if n = 0 then
-		    break
+		n := n - 1
 	end
 end;
 var n : integer;

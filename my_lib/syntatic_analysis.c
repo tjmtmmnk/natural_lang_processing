@@ -375,6 +375,9 @@ static int parseConditionState() {
 
     writeObjectCode("POP\tgr1");
     writeObjectCode("CPA\tgr1,gr0");
+    writeObjectCodeRaw("\tJZE\t");
+    writeJumpLabel(getIncLabel());
+    int jump_label = getLabel() + 1;
 
     if (token != TTHEN) { return errorWithReturn(getLineNum(), "'then' is not found"); }
 
@@ -387,13 +390,20 @@ static int parseConditionState() {
     if (token != TELSE) { tab_num--; }
 
     if (token == TELSE) {
+        writeObjectCodeRaw("\tJUMP\t");
+        writeJumpLabel(jump_label);
+        writeJumpLabel(getLabel());
+
         printf("\n");
         tab_num--;
         printWithTub("else\n", tab_num, FALSE);
         tab_num++;
         scanWithErrorJudge();
         if (parseState() == ERROR) { return ERROR; }
+        writeJumpLabel(jump_label);
         tab_num--;
+    } else {
+        writeJumpLabel(getLabel());
     }
     return OK;
 }
@@ -443,9 +453,10 @@ static int parseSimpleExpression() {
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
         int is_simple_term = TRUE;
-        int type, result_type;
+        int type, result_type, sign;
 
         if (token == TPLUS || token == TMINUS) {
+            sign = token;
             is_simple_term = FALSE;
             result_type = TPINT;
             printf(" ");
@@ -455,6 +466,14 @@ static int parseSimpleExpression() {
 
         if ((type = parseTerm()) == ERROR) { return ERROR; }
         if (!is_simple_term && (type != TPINT)) { return errorWithReturn(getLineNum(), "must be integer"); }
+
+        if (sign == TMINUS) {
+            writeObjectCode("POP\tgr2");
+            writeObjectCode("LAD\tgr1,0");
+            writeObjectCode("SUBA\tgr1,gr2");
+            writeObjectCode("JOV\tEOVF");
+            writeObjectCode("PUSH\t0,gr1");
+        }
 
         while (token == TPLUS || token == TMINUS || token == TOR) {
             is_simple_term = FALSE;
@@ -472,9 +491,14 @@ static int parseSimpleExpression() {
             if ((ope == TPLUS || ope == TMINUS)) { result_type = TPINT; }
 
             if ((type = parseTerm()) == ERROR) { return ERROR; }
+
+            writeSimpleExpObjectCode(ope);
         }
 
         if (is_simple_term) { result_type = type; }
+
+        //if one-term -> don't need to pop
+
         return result_type;
     }
     return errorWithReturn(getLineNum(), "simple expression error");
@@ -490,6 +514,7 @@ static int parseExpression() {
         if (!isStandardType(left_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
+            int ope = token;
             is_simple_expression = FALSE;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
@@ -497,6 +522,8 @@ static int parseExpression() {
             if ((right_type = parseSimpleExpression()) == ERROR) { return ERROR; }
             if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
             if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right factor must be same"); }
+
+            writeExpObjectCode(ope);
         }
         return (is_simple_expression) ? left_type : TPBOOL;
     } else {
@@ -531,7 +558,15 @@ static int parseIterationState() {
     scanWithErrorJudge();
 
     printf(" ");
+
+    writeJumpLabel(getIncLabel());
+    int jump_label = getLabel() + 1;
     if ((type = parseExpression()) == ERROR) { return ERROR; }
+    writeObjectCode("POP\tgr1");
+    writeObjectCode("CPA\tgr1,gr0");
+    writeObjectCodeRaw("\tJZE\t");
+    writeJumpLabel(jump_label);
+
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
     printf(" ");
 
@@ -540,6 +575,8 @@ static int parseIterationState() {
     printWithTub("do\n", 0, FALSE);
     scanWithErrorJudge();
     if (parseState() == ERROR) { return ERROR; }
+
+    writeJumpLabel(jump_label);
     return OK;
 }
 
@@ -625,6 +662,8 @@ static int parseInputState() {
 }
 
 static int parseOutputState() {
+    int write_type = token; // TWRITE or TWRITELN
+
     scanWithErrorJudge();
 
     if (token == TLPAREN) {
@@ -641,6 +680,11 @@ static int parseOutputState() {
         if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
 
         printWithTub(")", 0, FALSE);
+
+        if (write_type == TWRITELN) {
+            writeObjectCode("CALL\tWRITELINE");
+        }
+
         scanWithErrorJudge();
     }
     return OK;
@@ -656,6 +700,13 @@ static int parseOutputFormat() {
             if (!(str_len == 0 || str_len >= 2)) {
                 return errorWithReturn(getLineNum(), "string length wrong(0 or more than 2)");
             }
+
+            writeObjectCode("LD\tgr2,gr0");
+            writeObjectCode("CALL\tWRITESTR");
+
+//            writeJumpLabel(getIncLabel());
+//            writeObjectCodeRaw("\tDC\t'%s'\n", getStrAttr());
+
             printWithTub("'", 0, FALSE);
             printWithTub(getStrAttr(), 0, FALSE);
             printWithTub("'", 0, FALSE);
@@ -663,6 +714,8 @@ static int parseOutputFormat() {
         } else {
             if ((type = parseExpression()) == ERROR) { return ERROR; }
             if (!isStandardType(type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
+
+            writeOutputObjectCode(type);
 
             if (token == TCOLON) {
                 printf(":");
@@ -873,9 +926,10 @@ int parseProgram() {
     writeVarLabel("", FALSE); // dummy for $$[label]
     writeVarLabel(getStrAttr(), FALSE);
     writeObjectCode("START");
-    writeObjectCode("LAD gr0,0");
-    writeObjectCode("CALL L0001");
-    writeObjectCode("CALL FLUSH");
+    writeObjectCode("LAD\tgr0,0");
+    writeObjectCodeRaw("\tCALL\t");
+    writeJumpLabel(getIncLabel());
+    writeObjectCode("CALL\tFLUSH");
     writeObjectCode("SVC 0");
 
     printWithTub(getStrAttr(), 0, FALSE);
@@ -895,10 +949,11 @@ int parseProgram() {
 
     if (cnt_iteration > 0 && cnt_break == 0) {
         // can't know line number -> can't return errorWithReturn()
-        fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
-        return ERROR;
+//        fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
+//        return ERROR;
     }
     writeMalloc();
+    writeObjectCode("\n\n\n");
     writeLibrary();
 //    printCrossReference();
     return OK;
