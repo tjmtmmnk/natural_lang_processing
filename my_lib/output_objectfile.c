@@ -231,19 +231,29 @@ void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int 
     }
 }
 
+static void _writeVarLabel(char *var_name, char *proc_name) {
+    if (strcmp(proc_name, "global") == 0) {
+        writeObjectCodeRaw("$%s\n", var_name);
+    } else {
+        writeObjectCodeRaw("$%s%%%s\n", var_name, proc_name);
+    }
+}
+
 void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name) {
     struct EXID *p = existExIDinTable(scope, name);
     if (p->is_formal_param) {
-        writeObjectCode("LD\tgr1,\t%s", getVarLabel(p->name, p->proc_name));
+        writeObjectCode("LD\tgr1,\t");
+        _writeVarLabel(p->name, p->proc_name);
         if (!is_address_hand) {
             writeObjectCode("LD\tgr1,0,gr1");
         }
     } else {
         if (is_address_hand) {
-            writeObjectCode("LAD\tgr1,\t%s", getVarLabel(p->name, p->proc_name));
+            writeObjectCode("LAD\tgr1,\t");
         } else {
-            writeObjectCode("LD\tgr1,\t%s", getVarLabel(p->name, p->proc_name));
+            writeObjectCode("LD\tgr1,\t");
         }
+        _writeVarLabel(p->name, p->proc_name);
     }
 }
 
@@ -261,16 +271,6 @@ int getDecLabel() {
 }
 
 int getLabel() {
-    return label;
-}
-
-static char *getVarLabel(char *var_name, char *proc_name) {
-    char label[MAX_WORD_LENGTH];
-    if (strcmp(proc_name, "global") == 0) {
-        snprintf(label, MAX_WORD_LENGTH, "$%s", var_name);
-    } else {
-        snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", var_name, proc_name);
-    }
     return label;
 }
 
