@@ -7,6 +7,13 @@
 #include "string.h"
 #include "lexical_analysis.h"
 #include "syntatic_analysis.h"
+#include "cross_reference.h"
+
+//:param label: Lxxxx DC [content]
+struct DCLabel {
+    char *label;
+    struct DCLabel *next;
+} *label_root;
 
 extern void setOutputFileName(const char *name);
 extern void writeObjectCode(const char *format, ...);
@@ -21,6 +28,9 @@ extern void writeSimpleExpObjectCode(int ope);
 extern void writeExpObjectCode(int ope);
 extern void writeJumpLabel(int num);
 extern void writeOutputObjectCode(int type);
+extern void writeTermObjectCode(int ope);
+extern void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int size);
+extern void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name);
 extern int getIncLabel();
 extern int getDecLabel();
 extern int getLabel();

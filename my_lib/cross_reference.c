@@ -24,7 +24,11 @@ void setScope(eScope _scope) {
     scope = _scope;
 }
 
-static struct EXID *existExIDinTable(eScope _scope, char *name) {
+eScope getScope() {
+    return scope;
+}
+
+struct EXID *existExIDinTable(eScope _scope, char *name) {
     struct EXID *p;
 
     if (_scope == GLOBAL) {

@@ -1,5 +1,4 @@
 #include "output_objectfile.h"
-#include "cross_reference.h"
 
 static char *file_name;
 static FILE *fp;
@@ -21,6 +20,7 @@ void setOutputFileName(const char *name) {
 }
 
 void initializeCompiler() {
+    label_root = NULL;
     char out_file_name[MAX_WORD_LENGTH] = {'\0'};
     strcpy(out_file_name, file_name);
     strcat(out_file_name, ".csl");
@@ -105,7 +105,7 @@ void writeSimpleExpObjectCode(int ope) {
 }
 
 void writeExpObjectCode(int ope) {
-    writeObjectCode("POP\tgr2"); //
+    writeObjectCode("POP\tgr2");
     writeObjectCode("POP\tgr1");
     writeObjectCode("CPA\tgr1,gr2");
 
@@ -153,9 +153,28 @@ void writeExpObjectCode(int ope) {
     writeJumpLabel(label);
 }
 
+void writeTermObjectCode(int ope) {
+    writeObjectCode("POP\tgr2");
+    writeObjectCode("POP\tgr1");
+
+    switch (ope) {
+        case TAND:
+            writeObjectCode("AND\tgr1,gr2");
+            break;
+        case TSTAR:
+            writeObjectCode("MULA\tgr1,gr2");
+            writeObjectCode("JOV\tEOVF");
+            break;
+        case TDIV:
+            writeObjectCode("DIVA\tgr1,gr2");
+            writeObjectCode("JOV\tE0DIV");
+            break;
+    }
+    writeObjectCode("PUSH\t0,gr1");
+}
+
 // WRITELINE is run in parseOutputState() if need
 void writeOutputObjectCode(int type) {
-    writeObjectCode("LD\tgr2,gr0");
     switch (type) {
         case TPINT:
             writeObjectCode("CALL\tWRITEINT");
@@ -166,6 +185,65 @@ void writeOutputObjectCode(int type) {
         case TPBOOL:
             writeObjectCode("CALL\tWRITEBOOL");
             break;
+    }
+}
+
+int registerDCLabel(int type, int label, char *str) {
+    struct DCLabel *p;
+    struct DCLabel **q;
+    char *np;
+    char content[MAX_WORD_LENGTH];
+
+    if ((p = (struct DCLabel *) malloc(sizeof(struct DCLabel))) == NULL) {
+        fprintf(stderr, "[ERROR] can't malloc in 'registerDCLabel'\n");
+        return ERROR;
+    }
+
+    if ((np = (char *) malloc(strlen(content) + 1)) == NULL) {
+        fprintf(stderr, "[ERROR] can't malloc in 'registerDCLabel'\n");
+        return ERROR;
+    }
+
+//    switch (type){
+//        case TPINT:
+//        case TPCHAR:
+//    }
+
+    p->label = np;
+
+    for (q = &label_root; *q != NULL; q = &((*q)->next));
+    *q = p;
+
+    return OK;
+}
+
+void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int size) {
+    struct EXID *p = existExIDinTable(scope, name);
+    if (!p->is_formal_param) {
+        writeObjectCode("POP\tgr2"); //idx
+        writeObjectCode("LAD\tgr1,%d", size);
+        writeObjectCode("CPA\tgr1,gr2");
+        writeObjectCode("JPL\tEROV");
+        writeObjectCode("LAD\tgr1,\t$%s%%%s,gr2", p->name, p->proc_name);
+        if (!is_address_hand) {
+            writeObjectCode("LD\tgr1,0,gr1");
+        }
+    }
+}
+
+void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name) {
+    struct EXID *p = existExIDinTable(scope, name);
+    if (p->is_formal_param) {
+        writeObjectCode("LD\tgr1,\t%s", getVarLabel(p->name, p->proc_name));
+        if (!is_address_hand) {
+            writeObjectCode("LD\tgr1,0,gr1");
+        }
+    } else {
+        if (is_address_hand) {
+            writeObjectCode("LAD\tgr1,\t%s", getVarLabel(p->name, p->proc_name));
+        } else {
+            writeObjectCode("LD\tgr1,\t%s", getVarLabel(p->name, p->proc_name));
+        }
     }
 }
 
@@ -183,6 +261,16 @@ int getDecLabel() {
 }
 
 int getLabel() {
+    return label;
+}
+
+static char *getVarLabel(char *var_name, char *proc_name) {
+    char label[MAX_WORD_LENGTH];
+    if (strcmp(proc_name, "global") == 0) {
+        snprintf(label, MAX_WORD_LENGTH, "$%s", var_name);
+    } else {
+        snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", var_name, proc_name);
+    }
     return label;
 }
 

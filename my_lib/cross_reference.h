@@ -48,19 +48,21 @@ struct EXID {
 
 extern void initGlobalID();
 extern void initLocalID();
+extern struct EXID *existExIDinTable(eScope _scope, char *name);
 extern int registerExID(char *name, int def_line, int has_set_type);
 extern int updateExIDType(eKeyword type, int is_array, int size);
 extern int updateExIDTypeProcedure();
 extern int updateExIDRefLine(char *name, int ref_line, int type);
 extern void printCrossReference();
 extern void setProcName(char *name);
-const char *getProcName();
+extern const char *getProcName();
 extern void setScope(eScope _scope);
+extern eScope getScope();
 extern int isPrevDefined(char *name);
 extern int isStandardType(int type);
 extern int getLocalVarType(char *name);
 extern int getGlobalVarType(char *name);
-int getArraySize(eScope _scope, char *name);
+extern int getArraySize(eScope _scope, char *name);
 extern int keywordToType(int key, int is_array);
 extern int arrayTypeToStandardType(int type);
 extern int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types);
