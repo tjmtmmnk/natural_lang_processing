@@ -87,7 +87,6 @@ void writeMalloc() {
 
 void writeSimpleExpObjectCode(int ope) {
     writeObjectCode("POP\tgr2");
-    writeObjectCode("POP\tgr1");
     switch (ope) {
         case TPLUS:
             writeObjectCode("ADDA\tgr1,gr2");
@@ -101,13 +100,11 @@ void writeSimpleExpObjectCode(int ope) {
             writeObjectCode("OR\tgr1,gr2");
             break;
     }
-    writeObjectCode("PUSH\t0,gr1");
 }
 
 void writeExpObjectCode(int ope) {
     writeObjectCode("POP\tgr2");
-    writeObjectCode("POP\tgr1");
-    writeObjectCode("CPA\tgr1,gr2");
+    writeObjectCode("CPA\tgr2,gr1");
 
     switch (ope) {
         case TEQUAL: // =
@@ -143,19 +140,13 @@ void writeExpObjectCode(int ope) {
     writeObjectCode("LD\tgr1,gr0");
     writeObjectCodeRaw("\tJUMP\t");
     writeJumpLabel(label + 2);
-
     writeJumpLabel(label + 1);
     writeObjectCode("LAD\tgr1,1");
-
     writeJumpLabel(label + 2);
-    writeObjectCode("CPA\tgr1,gr0");
-    writeObjectCodeRaw("\tJZE\t");
-    writeJumpLabel(label);
 }
 
 void writeTermObjectCode(int ope) {
     writeObjectCode("POP\tgr2");
-    writeObjectCode("POP\tgr1");
 
     switch (ope) {
         case TAND:
@@ -170,7 +161,6 @@ void writeTermObjectCode(int ope) {
             writeObjectCode("JOV\tE0DIV");
             break;
     }
-    writeObjectCode("PUSH\t0,gr1");
 }
 
 // WRITELINE is run in parseOutputState() if need
@@ -242,18 +232,61 @@ static void _writeVarLabel(char *var_name, char *proc_name) {
 void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name) {
     struct EXID *p = existExIDinTable(scope, name);
     if (p->is_formal_param) {
-        writeObjectCode("LD\tgr1,\t");
+        writeObjectCodeRaw("\tLD\tgr1,\t");
         _writeVarLabel(p->name, p->proc_name);
         if (!is_address_hand) {
             writeObjectCode("LD\tgr1,0,gr1");
         }
     } else {
         if (is_address_hand) {
-            writeObjectCode("LAD\tgr1,\t");
+            writeObjectCodeRaw("\tLAD\tgr1,\t");
         } else {
-            writeObjectCode("LD\tgr1,\t");
+            writeObjectCodeRaw("\tLD\tgr1,\t");
         }
         _writeVarLabel(p->name, p->proc_name);
+    }
+}
+
+void writeFactorObjectCode(int token, int number, int exp_type) {
+    switch (token) {
+        case TFALSE:
+            writeObjectCode("LAD\tgr1,0");
+            break;
+        case TTRUE:
+            writeObjectCode("LAD\tgr1,1");
+            break;
+        case TNUMBER:
+            writeObjectCode("LAD\tgr1,%d", number);
+            break;
+        case TSTRING:
+            writeObjectCodeRaw("\tLD\tgr1,\t");
+            writeJumpLabel(getIncLabel());
+            //TODO: ラベルリストへの追加
+            break;
+        case TNOT:
+            writeObjectCode("POP\tgr2");
+            writeObjectCode("LAD\tgr1,1");
+            writeObjectCode("XOR\tgr1,gr2");
+            break;
+        case TINTEGER:
+            break;
+        case TBOOLEAN: // need below process because the exp value isn't determined 0 or 1
+            if ((exp_type == TPINT) || (exp_type == TPCHAR)) {
+                writeObjectCode("POP\tgr1");
+                writeObjectCode("CPA\tgr1,gr0");
+                writeObjectCodeRaw("\tJZE\t");
+                writeJumpLabel(getIncLabel());
+                writeObjectCode("LAD\tgr1,1");
+                writeJumpLabel(getLabel());
+            }
+            break;
+        case TCHAR:
+            if (exp_type == TPINT) {
+                writeObjectCode("POP\tgr2");
+                writeObjectCode("LAD\tgr1,127"); // 0b01111111
+                writeObjectCode("AND\tgr1,gr2");
+            }
+            break;
     }
 }
 

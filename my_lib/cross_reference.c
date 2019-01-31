@@ -51,7 +51,7 @@ int isPrevDefined(char *name) {
     return p != NULL;
 }
 
-int registerExID(char *name, int def_line, int has_set_type) {
+int registerExID(char *name, int def_line, int has_set_type, int is_formal_param) {
     struct EXID *p, **q;
     char *np;
 
@@ -83,6 +83,7 @@ int registerExID(char *name, int def_line, int has_set_type) {
     p->name = np;
     p->def_line = def_line;
     p->has_set_type = has_set_type;
+    p->is_formal_param = is_formal_param;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
     p->p_next = NULL;
     p->p_ref = NULL;

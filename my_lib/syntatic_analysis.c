@@ -8,7 +8,7 @@ static int can_call; // flag for recursive call regulation
 static int is_array;
 static int is_formal_param;
 static int is_onlyone_exp;
-static int is_adress_hand; // if false -> value hand
+static int is_address_hand; // if false -> value hand
 static int access_idx;
 static int tab_num;
 static int cnt_iteration, cnt_break;
@@ -133,13 +133,13 @@ static int parseVarNames() {
             snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", getStrAttr(), getProcName());
             strcpy(stack[sp++], label);
         }
-        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+        if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+            if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
             if (is_formal_param) {
                 char label[MAX_WORD_LENGTH] = {'\0'};
                 snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", getStrAttr(), getProcName());
@@ -260,6 +260,7 @@ static int parseTerm() {
         while (token == TSTAR || token == TDIV || token == TAND) {
             is_onlyone_exp = FALSE;
             is_simple_factor = FALSE;
+            writeObjectCode("PUSH\t0,gr1");
             int ope = token; //multi operator
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
@@ -287,7 +288,8 @@ static int parseFactor() {
     if (token != TNAME && token != TNUMBER && token != TSTRING) {
         printWithTub(getStrAttr(), 0, FALSE);
     }
-    int type;
+    int type, number, exp_type;
+    int select_token = token;
     switch (token) {
         case TNAME: {
             if ((type = parseVariable()) == ERROR) { return ERROR; }
@@ -304,6 +306,7 @@ static int parseFactor() {
             if (is_array) {
                 sscanf(getStrAttr(), "%d", &access_idx);
             }
+            sscanf(getStrAttr(), "%d", &number);
             printf("%s", getStrAttr());
             scanWithErrorJudge();
             break;
@@ -337,7 +340,6 @@ static int parseFactor() {
         case TINTEGER:
         case TBOOLEAN:
         case TCHAR: {
-            int exp_type;
             int standard_type = keywordToType(token, FALSE);
             type = standard_type;
 
@@ -360,6 +362,7 @@ static int parseFactor() {
         default:
             return errorWithReturn(getLineNum(), "factor error");
     }
+    writeFactorObjectCode(select_token, number, exp_type);
     return type;
 }
 
@@ -415,7 +418,7 @@ static int parseSubProgramDecler() {
         setProcName(getStrAttr());
         writeVarLabel(getStrAttr(), TRUE);
 
-        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+        if (registerExID(getStrAttr(), getLineNum(), FALSE, FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
@@ -477,6 +480,7 @@ static int parseSimpleExpression() {
         while (token == TPLUS || token == TMINUS || token == TOR) {
             is_onlyone_exp = FALSE;
             is_simple_term = FALSE;
+            writeObjectCode("PUSH\t0,gr1");
             int ope = token;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
@@ -518,6 +522,7 @@ static int parseExpression() {
             is_onlyone_exp = FALSE;
             is_simple_expression = FALSE;
             int ope = token;
+            writeObjectCode("PUSH\t0,gr1");
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
             scanWithErrorJudge(); //relational operator
@@ -571,7 +576,6 @@ static int parseIterationState() {
     writeJumpLabel(getIncLabel());
     int jump_label = getLabel() + 1;
     if ((type = parseExpression()) == ERROR) { return ERROR; }
-    writeObjectCode("POP\tgr1");
     writeObjectCode("CPA\tgr1,gr0");
     writeObjectCodeRaw("\tJZE\t");
     writeJumpLabel(jump_label);
@@ -625,8 +629,10 @@ static int parseCallState() {
 
 static int parseAssignState() {
     int left_type, right_type;
+    is_address_hand = TRUE;
     if ((left_type = parseVariable()) == ERROR) { return ERROR; }
     if (!isStandardType(left_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
+    writeObjectCode("PUSH\t0,gr1");
     printf(" ");
     if (token != TASSIGN) {
         return errorWithReturn(getLineNum(), "':=' is not found");
@@ -634,6 +640,7 @@ static int parseAssignState() {
     printWithTub(":=", 0, TRUE);
     scanWithErrorJudge();
 
+    is_address_hand = FALSE;
     if ((right_type = parseExpression()) == ERROR) { return ERROR; }
 
     if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
@@ -651,6 +658,7 @@ static int parseInputState() {
     scanWithErrorJudge();
 
     if (token == TLPAREN) {
+        is_address_hand = TRUE;
         printWithTub("(", 0, FALSE);
         scanWithErrorJudge();
 
@@ -679,6 +687,7 @@ static int parseOutputState() {
     scanWithErrorJudge();
 
     if (token == TLPAREN) {
+        is_address_hand = FALSE;
         printWithTub("(", 0, FALSE);
         scanWithErrorJudge();
 
@@ -876,7 +885,7 @@ static int parseVariable() {
             if (parseExpression() == ERROR) { return ERROR; }
 
             int _scope = (local_type) ? LOCAL : GLOBAL;
-            writeArrayVarObjectCode(_scope, is_adress_hand, name, array_size);
+            writeArrayVarObjectCode(_scope, is_address_hand, name, array_size);
 
 //            if (access_idx >= array_size) { return errorWithReturn(getLineNum(), "bad index(0~max-1)"); }
 
@@ -896,7 +905,7 @@ static int parseVariable() {
             }
 
             int _scope = (local_type) ? LOCAL : GLOBAL;
-            writeStandardVarObjectCode(_scope, is_adress_hand, name);
+            writeStandardVarObjectCode(_scope, is_address_hand, name);
         }
         return (is_use_local) ? local_type : global_type;
     }
@@ -939,7 +948,7 @@ int parseProgram() {
     is_array = FALSE;
     is_formal_param = FALSE;
     is_onlyone_exp = FALSE;
-    is_adress_hand = FALSE;
+    is_address_hand = FALSE;
     initGlobalID();
     initLocalID();
 
