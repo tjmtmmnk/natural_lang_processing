@@ -103,47 +103,54 @@ void writeSimpleExpObjectCode(int ope) {
     }
 }
 
-void writeExpObjectCode(int ope) {
+int writeExpObjectCode(int ope) {
     writeObjectCode("POP\tgr2");
     writeObjectCode("CPA\tgr2,gr1");
+
+    int break_label = getIncLabel();
+    int true_label = getIncLabel();
+    int false_label = getIncLabel();
 
     switch (ope) {
         case TEQUAL: // =
             writeObjectCodeRaw("\tJZE\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             break;
         case TNOTEQ: // <>
             writeObjectCodeRaw("\tJNZ\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             break;
         case TLE: // <
             writeObjectCodeRaw("\tJMI\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             break;
         case TLEEQ: // <=
             writeObjectCodeRaw("\tJMI\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             writeObjectCodeRaw("\tJZE\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             break;
         case TGR: // >
             writeObjectCodeRaw("\tJPL\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             break;
         case TGREQ: // >=
             writeObjectCodeRaw("\tJPL\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             writeObjectCodeRaw("\tJZE\t");
-            writeJumpLabel(label + 1);
+            writeJumpLabel(true_label);
             break;
     }
 
     writeObjectCode("LD\tgr1,gr0");
     writeObjectCodeRaw("\tJUMP\t");
-    writeJumpLabel(label + 2);
-    writeJumpLabel(label + 1);
+    writeJumpLabel(false_label);
+
+    writeJumpLabel(true_label);
     writeObjectCode("LAD\tgr1,1");
-    writeJumpLabel(label + 2);
+    writeJumpLabel(false_label);
+
+    return break_label;
 }
 
 void writeTermObjectCode(int ope) {
@@ -151,15 +158,16 @@ void writeTermObjectCode(int ope) {
 
     switch (ope) {
         case TAND:
-            writeObjectCode("AND\tgr2,gr1");
+            writeObjectCode("AND\tgr1,gr2");
             break;
         case TSTAR:
-            writeObjectCode("MULA\tgr2,gr1");
+            writeObjectCode("MULA\tgr1,gr2");
             writeObjectCode("JOV\tEOVF");
             break;
         case TDIV:
             writeObjectCode("DIVA\tgr2,gr1");
             writeObjectCode("JOV\tE0DIV");
+            writeObjectCode("LD\tgr1,gr2");
             break;
     }
 }
@@ -190,33 +198,41 @@ void writeInputObjectCode(int type) {
     }
 }
 
-int registerDCLabel(int type, int label, char *str) {
-    struct DCLabel *p;
-    struct DCLabel **q;
+void registerDCLabel(int label, char *str) {
+    struct DCLabel *p, **q;
     char *np;
     char content[MAX_WORD_LENGTH];
 
     if ((p = (struct DCLabel *) malloc(sizeof(struct DCLabel))) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'registerDCLabel'\n");
-        return ERROR;
+        return;
+    }
+
+    if (str == NULL) {
+        snprintf(content, MAX_WORD_LENGTH, "L%04d\tDC\t0", label);
+    } else {
+        snprintf(content, MAX_WORD_LENGTH, "L%04d\tDC\t\'%s\'", label, str);
     }
 
     if ((np = (char *) malloc(strlen(content) + 1)) == NULL) {
         fprintf(stderr, "[ERROR] can't malloc in 'registerDCLabel'\n");
-        return ERROR;
+        return;
     }
 
-//    switch (type){
-//        case TPINT:
-//        case TPCHAR:
-//    }
+    strcpy(np, content);
 
     p->label = np;
+    p->next = NULL;
 
     for (q = &label_root; *q != NULL; q = &((*q)->next));
     *q = p;
+}
 
-    return OK;
+void writeDCLabel() {
+    struct DCLabel *p;
+    for (p = label_root; p != NULL; p = p->next) {
+        writeObjectCodeRaw("%s\n", p->label);
+    }
 }
 
 static void _writeVarLabel(char *var_name, char *proc_name) {
@@ -260,7 +276,7 @@ void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name) {
     }
 }
 
-void writeFactorObjectCode(int token, int number, int exp_type) {
+void writeFactorObjectCode(int token, int number, int exp_type, char *str) {
     switch (token) {
         case TFALSE:
             writeObjectCode("LAD\tgr1,0");
@@ -274,7 +290,7 @@ void writeFactorObjectCode(int token, int number, int exp_type) {
         case TSTRING:
             writeObjectCodeRaw("\tLD\tgr1,\t");
             writeJumpLabel(getIncLabel());
-            //TODO: ラベルリストへの追加
+            registerDCLabel(getLabel(), str);
             break;
         case TNOT:
             writeObjectCode("POP\tgr2");
