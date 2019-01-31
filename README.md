@@ -1,2 +1,2 @@
-# natural_lang_processing
-[![CircleCI](https://circleci.com/gh/tjmtmmnk/natural_lang_processing.svg?style=svg)](https://circleci.com/gh/tjmtmmnk/natural_lang_processing)
+# lang_processing
+[![CircleCI](https://circleci.com/gh/tjmtmmnk/lang_processing.svg?style=svg)](https://circleci.com/gh/tjmtmmnk/lang_processing)
