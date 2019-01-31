@@ -93,8 +93,9 @@ void writeSimpleExpObjectCode(int ope) {
             writeObjectCode("JOV\tEOVF");
             break;
         case TMINUS:
-            writeObjectCode("SUBA\tgr1,gr2");
+            writeObjectCode("SUBA\tgr2,gr1");
             writeObjectCode("JOV\tEOVF");
+            writeObjectCode("LD\tgr1,gr2");
             break;
         case TOR:
             writeObjectCode("OR\tgr1,gr2");
@@ -150,14 +151,14 @@ void writeTermObjectCode(int ope) {
 
     switch (ope) {
         case TAND:
-            writeObjectCode("AND\tgr1,gr2");
+            writeObjectCode("AND\tgr2,gr1");
             break;
         case TSTAR:
-            writeObjectCode("MULA\tgr1,gr2");
+            writeObjectCode("MULA\tgr2,gr1");
             writeObjectCode("JOV\tEOVF");
             break;
         case TDIV:
-            writeObjectCode("DIVA\tgr1,gr2");
+            writeObjectCode("DIVA\tgr2,gr1");
             writeObjectCode("JOV\tE0DIV");
             break;
     }
@@ -174,6 +175,17 @@ void writeOutputObjectCode(int type) {
             break;
         case TPBOOL:
             writeObjectCode("CALL\tWRITEBOOL");
+            break;
+    }
+}
+
+void writeInputObjectCode(int type) {
+    switch (type) {
+        case TPINT:
+            writeObjectCode("CALL\tREADINT");
+            break;
+        case TPCHAR:
+            writeObjectCode("CALL\tREADCHAR");
             break;
     }
 }
@@ -207,25 +219,26 @@ int registerDCLabel(int type, int label, char *str) {
     return OK;
 }
 
-void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int size) {
-    struct EXID *p = existExIDinTable(scope, name);
-    if (!p->is_formal_param) {
-        writeObjectCode("POP\tgr2"); //idx
-        writeObjectCode("LAD\tgr1,%d", size);
-        writeObjectCode("CPA\tgr1,gr2");
-        writeObjectCode("JPL\tEROV");
-        writeObjectCode("LAD\tgr1,\t$%s%%%s,gr2", p->name, p->proc_name);
-        if (!is_address_hand) {
-            writeObjectCode("LD\tgr1,0,gr1");
-        }
-    }
-}
-
 static void _writeVarLabel(char *var_name, char *proc_name) {
     if (strcmp(proc_name, "global") == 0) {
         writeObjectCodeRaw("$%s\n", var_name);
     } else {
         writeObjectCodeRaw("$%s%%%s\n", var_name, proc_name);
+    }
+}
+
+void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int size) {
+    struct EXID *p = existExIDinTable(scope, name);
+    if (!p->is_formal_param) {
+        writeObjectCode("POP\tgr2"); //idx
+        writeObjectCode("LAD\tgr1,%d", size);
+        writeObjectCode("CPA\tgr2,gr1");
+        writeObjectCode("JPL\tEROV");
+        writeObjectCodeRaw("\tLAD\tgr1,\t");
+        _writeVarLabel(p->name, p->proc_name);
+        if (!is_address_hand) {
+            writeObjectCode("LD\tgr1,0,gr1");
+        }
     }
 }
 

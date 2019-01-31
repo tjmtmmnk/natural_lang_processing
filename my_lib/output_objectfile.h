@@ -32,6 +32,7 @@ extern void writeTermObjectCode(int ope);
 extern void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int size);
 extern void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name);
 extern void writeFactorObjectCode(int token, int number, int exp_type);
+extern void writeInputObjectCode(int type);
 extern int getIncLabel();
 extern int getDecLabel();
 extern int getLabel();
