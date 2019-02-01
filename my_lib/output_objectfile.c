@@ -32,7 +32,7 @@ void initializeCompiler() {
     is_initialized = 1;
 }
 
-void writeObjectCode(const char *restrict format, ...) {
+void writeObjectCode(const char *format, ...) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
     fprintf(fp, "\t");
     va_list ap;
@@ -42,7 +42,7 @@ void writeObjectCode(const char *restrict format, ...) {
     fprintf(fp, "\r\n");
 }
 
-void writeObjectCodeWithoutTab(const char *restrict format, ...) {
+void writeObjectCodeWithoutTab(const char *format, ...) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
     va_list ap;
     va_start(ap, format);
@@ -51,7 +51,7 @@ void writeObjectCodeWithoutTab(const char *restrict format, ...) {
     fprintf(fp, "\r\n");
 }
 
-void writeObjectCodeRaw(const char *restrict format, ...) {
+void writeObjectCodeRaw(const char *format, ...) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
     va_list ap;
     va_start(ap, format);
@@ -316,15 +316,6 @@ void writeFactorObjectCode(int token, int number, int exp_type, char *str) {
 
 int getIncLabel() {
     return ++label;
-}
-
-int getDecLabel() {
-    if (label > 0) {
-        return --label;
-    } else {
-        fprintf(stderr, "label is minus");
-        return ERROR;
-    }
 }
 
 int getLabel() {

@@ -622,6 +622,7 @@ static int parseIterationState() {
     writeObjectCode("CPA\tgr1,gr0");
     writeObjectCodeRaw("\tJZE\t");
     writeJumpLabel(loop_label + 1);
+    break_label = loop_label + 1;
 
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
     printf(" ");
@@ -857,6 +858,7 @@ static int parseState() {
             break;
         }
         case TRETURN:
+            writeObjectCode("RET");
             scanWithErrorJudge();
             break;
         case TREAD:
@@ -950,6 +952,7 @@ static int parseVariable() {
             printf("[");
             scanWithErrorJudge();
             if (parseExpression() == ERROR) { return ERROR; }
+            writeObjectCode("PUSH\t0,gr1");
 
             int _scope = (local_type) ? LOCAL : GLOBAL;
             writeArrayVarObjectCode(_scope, is_address_hand, name, array_size);
