@@ -41,26 +41,31 @@ struct EXID {
     struct TYPE *p_type;
     int has_set_type;
     int def_line;
+    int is_formal_param;
     struct LINE *p_ref; //correspond to muitiple reference
     struct EXID *p_next;
 } *global_id_root, *local_id_root;
 
 extern void initGlobalID();
 extern void initLocalID();
-extern int registerExID(char *name, int def_line, int is_formal_param);
+extern struct EXID *existExIDinTable(eScope _scope, char *name);
+extern int registerExID(char *name, int def_line, int has_set_type, int is_formal_param);
 extern int updateExIDType(eKeyword type, int is_array, int size);
 extern int updateExIDTypeProcedure();
 extern int updateExIDRefLine(char *name, int ref_line, int type);
 extern void printCrossReference();
 extern void setProcName(char *name);
+extern const char *getProcName();
 extern void setScope(eScope _scope);
+extern eScope getScope();
 extern int isPrevDefined(char *name);
 extern int isStandardType(int type);
 extern int getLocalVarType(char *name);
 extern int getGlobalVarType(char *name);
-int getArraySize(eScope _scope, char *name);
+extern int getArraySize(eScope _scope, char *name);
 extern int keywordToType(int key, int is_array);
 extern int arrayTypeToStandardType(int type);
 extern int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types);
+extern struct EXID *getMergedList();
 
 #endif //NATURAL_LANG_PROCESS_CROSS_REFERENCE_H

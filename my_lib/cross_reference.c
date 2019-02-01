@@ -16,11 +16,19 @@ void setProcName(char *name) {
     strcpy(proc_name, name);
 }
 
+const char *getProcName() {
+    return proc_name;
+}
+
 void setScope(eScope _scope) {
     scope = _scope;
 }
 
-static struct EXID *existExIDinTable(eScope _scope, char *name) {
+eScope getScope() {
+    return scope;
+}
+
+struct EXID *existExIDinTable(eScope _scope, char *name) {
     struct EXID *p;
 
     if (_scope == GLOBAL) {
@@ -43,7 +51,7 @@ int isPrevDefined(char *name) {
     return p != NULL;
 }
 
-int registerExID(char *name, int def_line, int has_set_type) {
+int registerExID(char *name, int def_line, int has_set_type, int is_formal_param) {
     struct EXID *p, **q;
     char *np;
 
@@ -75,6 +83,7 @@ int registerExID(char *name, int def_line, int has_set_type) {
     p->name = np;
     p->def_line = def_line;
     p->has_set_type = has_set_type;
+    p->is_formal_param = is_formal_param;
     p->proc_name = (char *) malloc(PROC_NAME_LENGTH);
     p->p_next = NULL;
     p->p_ref = NULL;
@@ -230,10 +239,7 @@ int checkMatchDeclerVarAndCallExpression(char *name, int exp_num, int *types) {
     for (t = p->p_type; t != NULL; t = t->p_proc) {
         if (t->var_type != TPPROC) { param_num++; }
     }
-    if (exp_num != param_num) {
-        printf("aaa %d\t%d\n", exp_num, param_num);
-        return errorWithReturn(getLineNum(), "unmatch num of params");
-    }
+    if (exp_num != param_num) { return errorWithReturn(getLineNum(), "unmatch num of params"); }
 
     for (t = p->p_type; t != NULL; t = t->p_proc) {
         if (t->var_type != TPPROC) {
@@ -369,6 +375,21 @@ static void printType(int type, int size) {
     }
 }
 
+struct EXID *getMergedList() {
+    struct EXID *p, **q;
+    for (q = &global_id_root; *q != NULL; q = &((*q)->p_next));
+    *q = local_id_root;
+
+    for (p = global_id_root; p != NULL; p = p->p_next) {
+        if ((strcmp(p->name, p->proc_name) != 0) && (strcmp(p->proc_name, "global") != 0)) {
+            char temp[100];
+            snprintf(temp, 100, "%s%%%s", p->name, p->proc_name);
+            strcpy(p->name, temp);
+        }
+    }
+    return mergeSort(global_id_root);
+}
+
 void printCrossReference() {
     struct EXID *p, **q;
     struct TYPE *t;
@@ -408,6 +429,6 @@ void printCrossReference() {
         for (l = p->p_ref; l != NULL; l = l->p_next) {
             printf("%d\t", l->ref_line);
         }
-        printf("\t|\n");
+        printf("|\n");
     }
 }

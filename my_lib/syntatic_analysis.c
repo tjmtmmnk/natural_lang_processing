@@ -1,12 +1,18 @@
 #include "syntatic_analysis.h"
 #include "lexical_analysis.h"
 #include "cross_reference.h"
+#include "output_objectfile.h"
 
 static int token;
 static int can_call; // flag for recursive call regulation
 static int is_array;
+static int is_formal_param;
+static int is_address_hand; // if false -> value hand
+static int is_main_call;
+static int is_need_malloc;
 static int access_idx;
 static int tab_num;
+static int break_label;
 static int cnt_iteration, cnt_break;
 static int while_nest;
 static int parseStandardType(int _is_array, int has_set_type);
@@ -122,14 +128,31 @@ static int parseName() {
 
 static int parseVarNames() {
     if (token == TNAME) {
-        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+        int sp = 0; // stack pointer
+        char stack[100][MAX_WORD_LENGTH];
+        if (is_formal_param) {
+            char label[MAX_WORD_LENGTH] = {'\0'};
+            snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", getStrAttr(), getProcName());
+            strcpy(stack[sp++], label);
+        }
+        if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
-            if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+            if (registerExID(getStrAttr(), getLineNum(), FALSE, is_formal_param) == ERROR) { return ERROR; }
+            if (is_formal_param) {
+                char label[MAX_WORD_LENGTH] = {'\0'};
+                snprintf(label, MAX_WORD_LENGTH, "$%s%%%s", getStrAttr(), getProcName());
+                strcpy(stack[sp++], label);
+            }
             if (parseName() == ERROR) { return ERROR; }
+        }
+
+        while (sp--) {
+            writeObjectCode("POP\tgr1");
+            writeObjectCode("ST\tgr1,\t%s", stack[sp]);
         }
 
         return OK;
@@ -184,6 +207,9 @@ static int parseVarDecler() {
 static int parseFormalParam() {
     if (token == TLPAREN) {
         setScope(LOCAL);
+        is_formal_param = TRUE;
+        writeObjectCode("POP\tgr2");
+
         scanWithErrorJudge();
         printf("(");
         if (parseVarNames() == ERROR) { return ERROR; }
@@ -215,6 +241,10 @@ static int parseFormalParam() {
 
         printf(")");
         scanWithErrorJudge();
+
+        writeObjectCode("PUSH\t0,gr2");
+
+        is_formal_param = FALSE;
         return OK;
     }
     return errorWithReturn(getLineNum(), "'(' is not found");
@@ -229,11 +259,14 @@ static int parseTerm() {
         if ((type = parseFactor()) == ERROR) { return ERROR; }
 
         while (token == TSTAR || token == TDIV || token == TAND) {
-            int ope = token;
+            is_need_malloc = TRUE;
+            is_address_hand = FALSE;
             is_simple_factor = FALSE;
+            writeObjectCode("PUSH\t0,gr1");
+            int ope = token; //multi operator
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
-            scanWithErrorJudge(); //multi operator
+            scanWithErrorJudge();
 
             if (ope == TAND && type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
             if (ope == TAND) { result_type = TPBOOL; }
@@ -243,6 +276,8 @@ static int parseTerm() {
             if ((ope == TSTAR || ope == TDIV)) { result_type = TPINT; }
 
             if ((type = parseFactor()) == ERROR) { return ERROR; }
+
+            writeTermObjectCode(ope);
         }
         if (is_simple_factor) { result_type = type; }
 
@@ -256,6 +291,9 @@ static int parseFactor() {
         printWithTub(getStrAttr(), 0, FALSE);
     }
     int type;
+    int number = -1, exp_type = -1;
+    int select_token = token;
+    char str[MAX_WORD_LENGTH] = {'\0'};
     switch (token) {
         case TNAME: {
             if ((type = parseVariable()) == ERROR) { return ERROR; }
@@ -263,20 +301,25 @@ static int parseFactor() {
         }
         case TFALSE:
         case TTRUE: {
+            is_need_malloc = TRUE;
             type = TPBOOL;
             scanWithErrorJudge();
             break;
         }
         case TNUMBER: {
+            is_need_malloc = TRUE;
             type = TPINT;
             if (is_array) {
                 sscanf(getStrAttr(), "%d", &access_idx);
             }
+            sscanf(getStrAttr(), "%d", &number);
             printf("%s", getStrAttr());
             scanWithErrorJudge();
             break;
         }
         case TSTRING: {
+            is_need_malloc = TRUE;
+            strcpy(str, getStrAttr());
             printf("'");
             printf("%s", getStrAttr());
             printf("'");
@@ -286,6 +329,7 @@ static int parseFactor() {
             break;
         }
         case TLPAREN: {
+            is_address_hand = FALSE;
             scanWithErrorJudge();
 
             if ((type = parseExpression()) == ERROR) { return ERROR; }
@@ -297,6 +341,7 @@ static int parseFactor() {
             break;
         }
         case TNOT: {
+            is_address_hand = FALSE;
             printf(" ");
             scanWithErrorJudge();
             if ((type = parseFactor()) != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
@@ -305,7 +350,7 @@ static int parseFactor() {
         case TINTEGER:
         case TBOOLEAN:
         case TCHAR: {
-            int exp_type;
+            is_address_hand = FALSE;
             int standard_type = keywordToType(token, FALSE);
             type = standard_type;
 
@@ -328,6 +373,7 @@ static int parseFactor() {
         default:
             return errorWithReturn(getLineNum(), "factor error");
     }
+    writeFactorObjectCode(select_token, number, exp_type, str);
     return type;
 }
 
@@ -335,9 +381,16 @@ static int parseConditionState() {
     int type;
     printf(" ");
     scanWithErrorJudge();
+    is_address_hand = FALSE;
 
     if ((type = parseExpression()) == ERROR) { return ERROR; }
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
+
+    writeObjectCode("CPA\tgr1,gr0");
+    writeObjectCodeRaw("\tJZE\t");
+    writeJumpLabel(getIncLabel());
+    int jump_label = getLabel();
+    getIncLabel();
 
     if (token != TTHEN) { return errorWithReturn(getLineNum(), "'then' is not found"); }
 
@@ -350,13 +403,20 @@ static int parseConditionState() {
     if (token != TELSE) { tab_num--; }
 
     if (token == TELSE) {
+        writeObjectCodeRaw("\tJUMP\t");
+        writeJumpLabel(jump_label + 1);
+        writeJumpLabel(jump_label);
+
         printf("\n");
         tab_num--;
         printWithTub("else\n", tab_num, FALSE);
         tab_num++;
         scanWithErrorJudge();
         if (parseState() == ERROR) { return ERROR; }
+        writeJumpLabel(jump_label + 1);
         tab_num--;
+    } else {
+        writeJumpLabel(jump_label);
     }
     return OK;
 }
@@ -368,7 +428,9 @@ static int parseSubProgramDecler() {
         scanWithErrorJudge();
 
         setProcName(getStrAttr());
-        if (registerExID(getStrAttr(), getLineNum(), FALSE) == ERROR) { return ERROR; }
+        writeVarLabel(getStrAttr(), TRUE);
+
+        if (registerExID(getStrAttr(), getLineNum(), FALSE, FALSE) == ERROR) { return ERROR; }
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLPAREN) {
@@ -393,7 +455,10 @@ static int parseSubProgramDecler() {
 
         printf(";\n");
 
+        writeObjectCode("RET");
+
         scanWithErrorJudge();
+
         return OK;
     }
     return errorWithReturn(getLineNum(), "'procedure' is not found");
@@ -404,10 +469,12 @@ static int parseSimpleExpression() {
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
         int is_simple_term = TRUE;
-        int type, result_type;
+        int type, result_type, sign;
 
         if (token == TPLUS || token == TMINUS) {
+            is_address_hand = FALSE;
             is_simple_term = FALSE;
+            sign = token;
             result_type = TPINT;
             printf(" ");
             printWithTub(token_str[token], 0, FALSE);
@@ -417,8 +484,19 @@ static int parseSimpleExpression() {
         if ((type = parseTerm()) == ERROR) { return ERROR; }
         if (!is_simple_term && (type != TPINT)) { return errorWithReturn(getLineNum(), "must be integer"); }
 
+        if (sign == TMINUS) {
+            writeObjectCode("POP\tgr2");
+            writeObjectCode("LAD\tgr1,0");
+            writeObjectCode("SUBA\tgr1,gr2");
+            writeObjectCode("JOV\tEOVF");
+            writeObjectCode("PUSH\t0,gr1");
+        }
+
         while (token == TPLUS || token == TMINUS || token == TOR) {
+            is_address_hand = FALSE;
+            is_need_malloc = TRUE;
             is_simple_term = FALSE;
+            writeObjectCode("PUSH\t0,gr1");
             int ope = token;
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
@@ -433,9 +511,14 @@ static int parseSimpleExpression() {
             if ((ope == TPLUS || ope == TMINUS)) { result_type = TPINT; }
 
             if ((type = parseTerm()) == ERROR) { return ERROR; }
+
+            writeSimpleExpObjectCode(ope);
         }
 
         if (is_simple_term) { result_type = type; }
+
+        //if one-term -> don't need to pop
+
         return result_type;
     }
     return errorWithReturn(getLineNum(), "simple expression error");
@@ -447,17 +530,24 @@ static int parseExpression() {
         token == TPLUS || token == TMINUS) {
         int left_type, right_type;
         int is_simple_expression = TRUE;
+
         if ((left_type = parseSimpleExpression()) == ERROR) { return ERROR; }
         if (!isStandardType(left_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
         while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
+            is_need_malloc = TRUE;
+            is_address_hand = FALSE;
             is_simple_expression = FALSE;
+            int ope = token;
+            writeObjectCode("PUSH\t0,gr1");
             printf(" ");
             printWithTub(token_str[token], 0, TRUE);
             scanWithErrorJudge(); //relational operator
             if ((right_type = parseSimpleExpression()) == ERROR) { return ERROR; }
             if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
             if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right factor must be same"); }
+
+            writeExpObjectCode(ope);
         }
         return (is_simple_expression) ? left_type : TPBOOL;
     } else {
@@ -470,29 +560,69 @@ static int parseExpressions(int *exp_num, int *types) {
         token == TLPAREN || token == TNOT || token == TINTEGER || token == TBOOLEAN || token == TCHAR ||
         token == TPLUS || token == TMINUS) {
         int type;
+        is_address_hand = is_need_malloc;
         if ((type = parseExpression()) == ERROR) { return ERROR; }
+
+        if (is_address_hand) {
+            writeObjectCode("PUSH\t0,gr1");
+        }
+        int malloc_label = -1;
+        if (is_need_malloc) {
+            static int is_first = 1;
+            if ((is_first--) == 1) { // To recycle memory, use the same address
+                malloc_label = getIncLabel();
+            }
+            writeObjectCodeRaw("\tLAD\tgr2,\t");
+            writeJumpLabel(malloc_label);
+            registerDCLabel(malloc_label, NULL);
+            writeObjectCode("ST\tgr1,0,gr2");
+            writeObjectCode("PUSH\t0,gr2");
+        }
+
         types[*exp_num] = type;
         *exp_num = *exp_num + 1;
 
         while (token == TCOMMA) {
             printf(", ");
             scanWithErrorJudge();
+
+            is_address_hand = is_need_malloc;
             if ((type = parseExpression()) == ERROR) { return ERROR; }
+
+            if (is_address_hand) {
+                writeObjectCode("PUSH\t0,gr1");
+            }
+            if (is_need_malloc) {
+                writeObjectCodeRaw("\tLAD\tgr2,\t");
+                writeJumpLabel(malloc_label);
+                registerDCLabel(malloc_label, NULL);
+                writeObjectCode("ST\tgr1,0,gr2");
+                writeObjectCode("PUSH\t0,gr2");
+            }
             types[*exp_num] = type;
             *exp_num = *exp_num + 1;
         }
-
         return OK;
     }
     return errorWithReturn(getLineNum(), "expressions error");
 }
 
 static int parseIterationState() {
+    is_address_hand = FALSE;
     int type;
     scanWithErrorJudge();
 
     printf(" ");
+
+    writeJumpLabel(getIncLabel());
+    int loop_label = getLabel();
+    getIncLabel(); // while need break label
+
     if ((type = parseExpression()) == ERROR) { return ERROR; }
+    writeObjectCode("CPA\tgr1,gr0");
+    writeObjectCodeRaw("\tJZE\t");
+    writeJumpLabel(loop_label + 1);
+
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
     printf(" ");
 
@@ -501,6 +631,11 @@ static int parseIterationState() {
     printWithTub("do\n", 0, FALSE);
     scanWithErrorJudge();
     if (parseState() == ERROR) { return ERROR; }
+
+    writeObjectCodeRaw("\tJUMP\t");
+    writeJumpLabel(loop_label);
+
+    writeJumpLabel(loop_label + 1);
     return OK;
 }
 
@@ -513,6 +648,7 @@ static int parseCallState() {
     char name[100];
 
     strcpy(name, getStrAttr());
+
     if (updateExIDRefLine(name, getLineNum(), TPPROC) == ERROR) { return ERROR; }
 
     if (!isPrevDefined(name)) { return errorWithReturn(getLineNum(), "undefine variable"); }
@@ -535,13 +671,18 @@ static int parseCallState() {
         printf(")");
         scanWithErrorJudge();
     }
+
+    writeObjectCode("CALL\t$%s", name);
+
     return OK;
 }
 
 static int parseAssignState() {
     int left_type, right_type;
+    is_address_hand = TRUE;
     if ((left_type = parseVariable()) == ERROR) { return ERROR; }
     if (!isStandardType(left_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
+    writeObjectCode("PUSH\t0,gr1");
     printf(" ");
     if (token != TASSIGN) {
         return errorWithReturn(getLineNum(), "':=' is not found");
@@ -549,20 +690,26 @@ static int parseAssignState() {
     printWithTub(":=", 0, TRUE);
     scanWithErrorJudge();
 
+    is_address_hand = FALSE;
     if ((right_type = parseExpression()) == ERROR) { return ERROR; }
 
     if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
     if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right must be same type"); }
 
+    writeObjectCode("POP\tgr2");
+    writeObjectCode("ST\tgr1,0,gr2");
+
     return OK;
 }
 
 static int parseInputState() {
+    int input_type = token; //TREAD or TREADLN
     int type;
     scanWithErrorJudge();
 
     if (token == TLPAREN) {
+        is_address_hand = TRUE;
         printWithTub("(", 0, FALSE);
         scanWithErrorJudge();
 
@@ -580,15 +727,24 @@ static int parseInputState() {
         if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
 
         printWithTub(")", 0, FALSE);
+
+        writeInputObjectCode(type);
+        if (input_type == TREADLN) {
+            writeObjectCode("CALL\tREADLINE");
+        }
+
         scanWithErrorJudge();
     }
     return OK;
 }
 
 static int parseOutputState() {
+    int write_type = token; // TWRITE or TWRITELN
+
     scanWithErrorJudge();
 
     if (token == TLPAREN) {
+        is_address_hand = FALSE;
         printWithTub("(", 0, FALSE);
         scanWithErrorJudge();
 
@@ -602,7 +758,12 @@ static int parseOutputState() {
         if (token != TRPAREN) { return errorWithReturn(getLineNum(), "')' is not found"); }
 
         printWithTub(")", 0, FALSE);
+
         scanWithErrorJudge();
+    }
+
+    if (write_type == TWRITELN) {
+        writeObjectCode("CALL\tWRITELINE");
     }
     return OK;
 }
@@ -617,24 +778,42 @@ static int parseOutputFormat() {
             if (!(str_len == 0 || str_len >= 2)) {
                 return errorWithReturn(getLineNum(), "string length wrong(0 or more than 2)");
             }
+
+            writeObjectCodeRaw("\tLAD\tgr1,\t");
+            writeJumpLabel(getIncLabel());
+            writeOutputObjectCode(type);
+            writeObjectCode("LD\tgr2,gr0");
+            writeObjectCode("CALL\tWRITESTR");
+
+            registerDCLabel(getLabel(), getStrAttr());
+
             printWithTub("'", 0, FALSE);
             printWithTub(getStrAttr(), 0, FALSE);
             printWithTub("'", 0, FALSE);
             scanWithErrorJudge();
         } else {
+            is_address_hand = FALSE;
             if ((type = parseExpression()) == ERROR) { return ERROR; }
             if (!isStandardType(type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
 
+            int digits = 0;
             if (token == TCOLON) {
                 printf(":");
                 scanWithErrorJudge();
-                if (token != TNUMBER) {
-                    return errorWithReturn(getLineNum(), "'number' is not found");
-                }
+                sscanf(getStrAttr(), "%d", &digits);
+                if (token != TNUMBER) { return errorWithReturn(getLineNum(), "'number' is not found"); }
                 printf("%s", getStrAttr());
                 scanWithErrorJudge();
             }
+            //parseExpressionで変数のコードを生成
+            if (digits > 0) {
+                writeObjectCode("LAD\tgr2,%d", digits);
+            } else {
+                writeObjectCode("LD\tgr2,gr0");
+            }
+            writeOutputObjectCode(type);
         }
+
         return OK;
     }
     return errorWithReturn(getLineNum(), "output format error");
@@ -668,6 +847,8 @@ static int parseState() {
             } else if (while_nest == 0) {
                 return errorWithReturn(getLineNum(), "Can't include 'break' out of iteration state");
             }
+            writeObjectCodeRaw("\tJUMP\t");
+            writeJumpLabel(break_label);
             scanWithErrorJudge(); //parse break
             break;
         }
@@ -701,6 +882,9 @@ static int parseState() {
 
 static int parseCompoundState() {
     if (token == TBEGIN) {
+        if (!is_main_call) {
+            is_need_malloc = FALSE;
+        }
         printWithTub("begin\n", tab_num, FALSE);
         scanWithErrorJudge();
         tab_num++;
@@ -728,6 +912,7 @@ static int parseCompoundState() {
 // equal to "left part"
 static int parseVariable() {
     if (token == TNAME) {
+        is_need_malloc = FALSE;
         is_array = FALSE;
         int is_use_local = TRUE;
         int line = getLineNum();
@@ -741,9 +926,11 @@ static int parseVariable() {
             return errorWithReturn(getLineNum(), "undefine variable");
         }
         if (parseName() == ERROR) { return ERROR; }
-        if (token == TLSQPAREN) {
-            int array_size = 0;
+
+        if (token == TLSQPAREN) { //array
+            is_address_hand = FALSE;
             is_array = TRUE;
+            int array_size = 0;
 
             // if both local and global variable are not 'array' -> compile error
             if (local_type != 0 && !isStandardType(local_type)) { // local var is array type
@@ -764,7 +951,8 @@ static int parseVariable() {
             scanWithErrorJudge();
             if (parseExpression() == ERROR) { return ERROR; }
 
-            if (access_idx >= array_size) { return errorWithReturn(getLineNum(), "bad index(0~max-1)"); }
+            int _scope = (local_type) ? LOCAL : GLOBAL;
+            writeArrayVarObjectCode(_scope, is_address_hand, name, array_size);
 
             if (token != TRSQPAREN) { return errorWithReturn(getLineNum(), "']' is not found"); }
             printf("]");
@@ -780,6 +968,9 @@ static int parseVariable() {
             } else {
                 return errorWithReturn(getLineNum(), "must be standard type");
             }
+
+            int _scope = (local_type) ? LOCAL : GLOBAL;
+            writeStandardVarObjectCode(_scope, is_address_hand, name);
         }
         return (is_use_local) ? local_type : global_type;
     }
@@ -799,10 +990,15 @@ static int parseBlock() {
             }
         }
         if (token != TBEGIN) { return errorWithReturn(getLineNum(), "'begin' is not found"); }
+        writeJumpLabel(1);
 
         can_call = TRUE;
+        is_main_call = TRUE;
         if (parseCompoundState() == ERROR) { return ERROR; }
+        is_main_call = FALSE;
         can_call = FALSE;
+
+        writeObjectCode("RET");
 
         return OK;
     }
@@ -818,8 +1014,13 @@ int parseProgram() {
     cnt_break = 0;
     while_nest = 0;
     access_idx = 0;
+    break_label = 0;
     can_call = FALSE;
     is_array = FALSE;
+    is_formal_param = FALSE;
+    is_address_hand = FALSE;
+    is_need_malloc = FALSE;
+    is_main_call = FALSE;
     initGlobalID();
     initLocalID();
 
@@ -829,6 +1030,15 @@ int parseProgram() {
     scanWithErrorJudge();
 
     if (token != TNAME) { return errorWithReturn(getLineNum(), "'program name' is not found"); }
+
+    writeVarLabel("", FALSE); // dummy for $$[label]
+    writeVarLabel(getStrAttr(), FALSE);
+    writeObjectCode("START");
+    writeObjectCode("LAD\tgr0,0");
+    writeObjectCodeRaw("\tCALL\t");
+    writeJumpLabel(getIncLabel());
+    writeObjectCode("CALL\tFLUSH");
+    writeObjectCode("SVC 0");
 
     printWithTub(getStrAttr(), 0, FALSE);
     scanWithErrorJudge();
@@ -845,11 +1055,14 @@ int parseProgram() {
 
     printf(".\n");
 
-    if (cnt_iteration > 0 && cnt_break == 0) {
-        // can't know line number -> can't return errorWithReturn()
-        fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
-        return ERROR;
-    }
-    printCrossReference();
+//    if (cnt_iteration > 0 && cnt_break == 0) {
+    // can't know line number -> can't return errorWithReturn()
+//        fprintf(stderr, "[ERROR] : 'break' must be included at least one in iteration statement\n");
+//        return ERROR;
+//    }
+    writeMalloc();
+    writeDCLabel();
+    writeLibrary();
+    writeObjectCode("END");
     return OK;
 }
