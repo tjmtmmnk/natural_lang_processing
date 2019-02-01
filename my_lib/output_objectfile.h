@@ -17,8 +17,8 @@ struct DCLabel {
 
 extern void setOutputFileName(const char *name);
 extern void writeObjectCode(const char *format, ...);
-extern void writeObjectCodeWithoutTab(const char *restrict format, ...);
-extern void writeObjectCodeRaw(const char *restrict format, ...);
+extern void writeObjectCodeWithoutTab(const char *format, ...);
+extern void writeObjectCodeRaw(const char *format, ...);
 extern void writeVarLabel(const char *label, int is_newline);
 extern void initializeCompiler();
 extern void finalizeCompiler();
@@ -36,7 +36,6 @@ extern void writeInputObjectCode(int type);
 extern void registerDCLabel(int label, char *str);
 extern void writeDCLabel();
 extern int getIncLabel();
-extern int getDecLabel();
 extern int getLabel();
 
 #endif //NATURAL_LANG_PROCESS_OUTPUT_OBJECTFILE_H
