@@ -10,9 +10,9 @@ static int is_formal_param;
 static int is_address_hand; // if false -> value hand
 static int is_main_call;
 static int is_need_malloc;
-static int break_label;
 static int access_idx;
 static int tab_num;
+static int break_label;
 static int cnt_iteration, cnt_break;
 static int while_nest;
 static int parseStandardType(int _is_array, int has_set_type);
@@ -390,7 +390,8 @@ static int parseConditionState() {
     writeObjectCode("CPA\tgr1,gr0");
     writeObjectCodeRaw("\tJZE\t");
     writeJumpLabel(getIncLabel());
-    int jump_label = getLabel() + 1;
+    int jump_label = getLabel();
+    getIncLabel();
 
     if (token != TTHEN) { return errorWithReturn(getLineNum(), "'then' is not found"); }
 
@@ -404,8 +405,8 @@ static int parseConditionState() {
 
     if (token == TELSE) {
         writeObjectCodeRaw("\tJUMP\t");
+        writeJumpLabel(jump_label + 1);
         writeJumpLabel(jump_label);
-        writeJumpLabel(getLabel());
 
         printf("\n");
         tab_num--;
@@ -413,10 +414,10 @@ static int parseConditionState() {
         tab_num++;
         scanWithErrorJudge();
         if (parseState() == ERROR) { return ERROR; }
-        writeJumpLabel(jump_label);
+        writeJumpLabel(jump_label + 1);
         tab_num--;
     } else {
-        writeJumpLabel(getLabel());
+        writeJumpLabel(jump_label);
     }
     return OK;
 }
@@ -547,7 +548,7 @@ static int parseExpression() {
             if (!isStandardType(right_type)) { return errorWithReturn(getLineNum(), "must be standard type"); }
             if (left_type != right_type) { return errorWithReturn(getLineNum(), "left and right factor must be same"); }
 
-            break_label = writeExpObjectCode(ope);
+            writeExpObjectCode(ope);
         }
         return (is_simple_expression) ? left_type : TPBOOL;
     } else {
@@ -615,10 +616,13 @@ static int parseIterationState() {
     printf(" ");
 
     writeJumpLabel(getIncLabel());
+    int loop_label = getLabel();
+    getIncLabel(); // while need break label
+
     if ((type = parseExpression()) == ERROR) { return ERROR; }
     writeObjectCode("CPA\tgr1,gr0");
     writeObjectCodeRaw("\tJZE\t");
-    writeJumpLabel(break_label);
+    writeJumpLabel(loop_label + 1);
 
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
     printf(" ");
@@ -630,9 +634,9 @@ static int parseIterationState() {
     if (parseState() == ERROR) { return ERROR; }
 
     writeObjectCodeRaw("\tJUMP\t");
-    writeJumpLabel(getLabel());
+    writeJumpLabel(loop_label);
 
-    writeJumpLabel(break_label);
+    writeJumpLabel(loop_label + 1);
     return OK;
 }
 
@@ -756,11 +760,11 @@ static int parseOutputState() {
 
         printWithTub(")", 0, FALSE);
 
-        if (write_type == TWRITELN) {
-            writeObjectCode("CALL\tWRITELINE");
-        }
-
         scanWithErrorJudge();
+    }
+
+    if (write_type == TWRITELN) {
+        writeObjectCode("CALL\tWRITELINE");
     }
     return OK;
 }
@@ -844,6 +848,8 @@ static int parseState() {
             } else if (while_nest == 0) {
                 return errorWithReturn(getLineNum(), "Can't include 'break' out of iteration state");
             }
+            writeObjectCodeRaw("\tJUMP\t");
+            writeJumpLabel(break_label);
             scanWithErrorJudge(); //parse break
             break;
         }
@@ -1058,5 +1064,6 @@ int parseProgram() {
     writeMalloc();
     writeDCLabel();
     writeLibrary();
+    writeObjectCode("END");
     return OK;
 }

@@ -25,7 +25,7 @@ extern void finalizeCompiler();
 extern void writeMalloc();
 extern void writeLibrary();
 extern void writeSimpleExpObjectCode(int ope);
-extern int writeExpObjectCode(int ope);
+extern void writeExpObjectCode(int ope);
 extern void writeJumpLabel(int num);
 extern void writeOutputObjectCode(int type);
 extern void writeTermObjectCode(int ope);

@@ -39,7 +39,7 @@ void writeObjectCode(const char *restrict format, ...) {
     va_start(ap, format);
     vfprintf(fp, format, ap);
     va_end(ap);
-    fprintf(fp, "\n");
+    fprintf(fp, "\r\n");
 }
 
 void writeObjectCodeWithoutTab(const char *restrict format, ...) {
@@ -48,7 +48,7 @@ void writeObjectCodeWithoutTab(const char *restrict format, ...) {
     va_start(ap, format);
     vfprintf(fp, format, ap);
     va_end(ap);
-    fprintf(fp, "\n");
+    fprintf(fp, "\r\n");
 }
 
 void writeObjectCodeRaw(const char *restrict format, ...) {
@@ -63,7 +63,7 @@ void writeVarLabel(const char *label, int is_newline) {
     if (!is_initialized || !is_set_filename) { fprintf(stderr, "Please initialize\n"); }
     fprintf(fp, "$%s", label);
     if (is_newline) {
-        fprintf(fp, "\n");
+        fprintf(fp, "\r\n");
     }
 }
 
@@ -103,11 +103,10 @@ void writeSimpleExpObjectCode(int ope) {
     }
 }
 
-int writeExpObjectCode(int ope) {
+void writeExpObjectCode(int ope) {
     writeObjectCode("POP\tgr2");
     writeObjectCode("CPA\tgr2,gr1");
 
-    int break_label = getIncLabel();
     int true_label = getIncLabel();
     int false_label = getIncLabel();
 
@@ -149,8 +148,6 @@ int writeExpObjectCode(int ope) {
     writeJumpLabel(true_label);
     writeObjectCode("LAD\tgr1,1");
     writeJumpLabel(false_label);
-
-    return break_label;
 }
 
 void writeTermObjectCode(int ope) {
@@ -231,15 +228,15 @@ void registerDCLabel(int label, char *str) {
 void writeDCLabel() {
     struct DCLabel *p;
     for (p = label_root; p != NULL; p = p->next) {
-        writeObjectCodeRaw("%s\n", p->label);
+        writeObjectCodeRaw("%s\r\n", p->label);
     }
 }
 
 static void _writeVarLabel(char *var_name, char *proc_name) {
     if (strcmp(proc_name, "global") == 0) {
-        writeObjectCodeRaw("$%s\n", var_name);
+        writeObjectCodeRaw("$%s\r\n", var_name);
     } else {
-        writeObjectCodeRaw("$%s%%%s\n", var_name, proc_name);
+        writeObjectCodeRaw("$%s%%%s\r\n", var_name, proc_name);
     }
 }
 
@@ -301,7 +298,6 @@ void writeFactorObjectCode(int token, int number, int exp_type, char *str) {
             break;
         case TBOOLEAN: // need below process because the exp value isn't determined 0 or 1
             if ((exp_type == TPINT) || (exp_type == TPCHAR)) {
-                writeObjectCode("POP\tgr1");
                 writeObjectCode("CPA\tgr1,gr0");
                 writeObjectCodeRaw("\tJZE\t");
                 writeJumpLabel(getIncLabel());
@@ -337,15 +333,15 @@ int getLabel() {
 }
 
 void writeLibrary() {
-    writeVarLabel("EOVF", TRUE);
+    writeObjectCodeWithoutTab("EOVF");
     writeObjectCode("CALL  WRITELINE");
     writeObjectCode("LAD  gr1, EOVF1");
     writeObjectCode("LD  gr2, gr0");
     writeObjectCode("CALL  WRITESTR");
     writeObjectCode("CALL  WRITELINE");
     writeObjectCode("SVC  1");
-    writeVarLabel("EOVF1    DC  '***** Run-Time Error : Overflow *****'", TRUE);
-    writeVarLabel("E0DIV", TRUE);
+    writeObjectCodeWithoutTab("EOVF1    DC  '***** Run-Time Error : Overflow *****'");
+    writeObjectCodeWithoutTab("E0DIV");
     writeObjectCode("JNZ  EOVF");
     writeObjectCode("CALL  WRITELINE");
     writeObjectCode("LAD  gr1, E0DIV1");
@@ -353,71 +349,71 @@ void writeLibrary() {
     writeObjectCode("CALL  WRITESTR");
     writeObjectCode("CALL  WRITELINE");
     writeObjectCode("SVC  2");
-    writeVarLabel("E0DIV1    DC  '***** Run-Time Error : Zero-Divide *****'", TRUE);
-    writeVarLabel("EROV", TRUE);
+    writeObjectCodeWithoutTab("E0DIV1    DC  '***** Run-Time Error : Zero-Divide *****'");
+    writeObjectCodeWithoutTab("EROV");
     writeObjectCode("CALL  WRITELINE");
     writeObjectCode("LAD  gr1, EROV1");
     writeObjectCode("LD  gr2, gr0");
     writeObjectCode("CALL  WRITESTR");
     writeObjectCode("CALL  WRITELINE");
     writeObjectCode("SVC  3");
-    writeVarLabel("EROV1    DC  '***** Run-Time Error : Range-Over in Array Index *****'", TRUE);
-    writeVarLabel("WRITECHAR", TRUE);
+    writeObjectCodeWithoutTab("EROV1    DC  '***** Run-Time Error : Range-Over in Array Index *****'");
+    writeObjectCodeWithoutTab("WRITECHAR");
     writeObjectCode("RPUSH");
     writeObjectCode("LD  gr6, SPACE");
     writeObjectCode("LD  gr7, OBUFSIZE");
-    writeVarLabel("WC1", TRUE);
+    writeObjectCodeWithoutTab("WC1");
     writeObjectCode("SUBA  gr2, ONE");
     writeObjectCode("JZE  WC2");
     writeObjectCode("JMI  WC2");
     writeObjectCode("ST  gr6, OBUF,gr7");
     writeObjectCode("CALL  BOVFCHECK");
     writeObjectCode("JUMP  WC1");
-    writeVarLabel("WC2", TRUE);
+    writeObjectCodeWithoutTab("WC2");
     writeObjectCode("ST  gr1, OBUF,gr7");
     writeObjectCode("CALL  BOVFCHECK");
     writeObjectCode("ST  gr7, OBUFSIZE");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("WRITESTR", TRUE);
+    writeObjectCodeWithoutTab("WRITESTR");
     writeObjectCode("RPUSH");
     writeObjectCode("LD  gr6, gr1");
-    writeVarLabel("WS1", TRUE);
+    writeObjectCodeWithoutTab("WS1");
     writeObjectCode("LD  gr4, 0,gr6");
     writeObjectCode("JZE  WS2");
     writeObjectCode("ADDA  gr6, ONE");
     writeObjectCode("SUBA  gr2, ONE");
     writeObjectCode("JUMP  WS1");
-    writeVarLabel("WS2", TRUE);
+    writeObjectCodeWithoutTab("WS2");
     writeObjectCode("LD  gr7, OBUFSIZE");
     writeObjectCode("LD  gr5, SPACE");
-    writeVarLabel("WS3", TRUE);
+    writeObjectCodeWithoutTab("WS3");
     writeObjectCode("SUBA  gr2, ONE");
     writeObjectCode("JMI  WS4");
     writeObjectCode("ST  gr5, OBUF,gr7");
     writeObjectCode("CALL  BOVFCHECK");
     writeObjectCode("JUMP  WS3");
-    writeVarLabel("WS4", TRUE);
+    writeObjectCodeWithoutTab("WS4");
     writeObjectCode("LD  gr4, 0,gr1");
     writeObjectCode("JZE  WS5");
     writeObjectCode("ST  gr4, OBUF,gr7");
     writeObjectCode("ADDA  gr1, ONE");
     writeObjectCode("CALL  BOVFCHECK");
     writeObjectCode("JUMP  WS4");
-    writeVarLabel("WS5", TRUE);
+    writeObjectCodeWithoutTab("WS5");
     writeObjectCode("ST  gr7, OBUFSIZE");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("BOVFCHECK", TRUE);
+    writeObjectCodeWithoutTab("BOVFCHECK");
     writeObjectCode("  ADDA  gr7, ONE");
     writeObjectCode("  CPA   gr7, BOVFLEVEL");
     writeObjectCode("  JMI  BOVF1");
     writeObjectCode("  CALL  WRITELINE");
     writeObjectCode("  LD gr7, OBUFSIZE");
-    writeVarLabel("BOVF1", TRUE);
+    writeObjectCodeWithoutTab("BOVF1");
     writeObjectCode("  RET");
-    writeVarLabel("BOVFLEVEL  DC 256", TRUE);
-    writeVarLabel("WRITEINT", TRUE);
+    writeObjectCodeWithoutTab("BOVFLEVEL  DC 256");
+    writeObjectCodeWithoutTab("WRITEINT");
     writeObjectCode("RPUSH");
     writeObjectCode("LD  gr7, gr0");
     writeObjectCode("CPA  gr1, gr0");
@@ -429,7 +425,7 @@ void writeLibrary() {
     writeObjectCode("JZE  WI6");
     writeObjectCode("LD  gr1, gr4");
     writeObjectCode("LD  gr7, ONE");
-    writeVarLabel("WI1", TRUE);
+    writeObjectCodeWithoutTab("WI1");
     writeObjectCode("LD  gr6, SIX");
     writeObjectCode("ST  gr0, INTBUF,gr6");
     writeObjectCode("SUBA  gr6, ONE");
@@ -438,7 +434,7 @@ void writeLibrary() {
     writeObjectCode("LD  gr4, ZERO");
     writeObjectCode("ST  gr4, INTBUF,gr6");
     writeObjectCode("JUMP  WI5");
-    writeVarLabel("WI2", TRUE);
+    writeObjectCodeWithoutTab("WI2");
     writeObjectCode("CPA  gr1, gr0");
     writeObjectCode("JZE  WI3");
     writeObjectCode("LD  gr5, gr1");
@@ -450,40 +446,40 @@ void writeLibrary() {
     writeObjectCode("ST  gr5, INTBUF,gr6");
     writeObjectCode("SUBA  gr6, ONE");
     writeObjectCode("JUMP  WI2");
-    writeVarLabel("WI3", TRUE);
+    writeObjectCodeWithoutTab("WI3");
     writeObjectCode("CPA  gr7, gr0");
     writeObjectCode("JZE  WI4");
     writeObjectCode("LD  gr4, MINUS");
     writeObjectCode("ST  gr4, INTBUF,gr6");
     writeObjectCode("JUMP  WI5");
-    writeVarLabel("WI4", TRUE);
+    writeObjectCodeWithoutTab("WI4");
     writeObjectCode("ADDA  gr6, ONE");
-    writeVarLabel("WI5", TRUE);
+    writeObjectCodeWithoutTab("WI5");
     writeObjectCode("LAD  gr1, INTBUF,gr6");
     writeObjectCode("CALL  WRITESTR");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("WI6", TRUE);
+    writeObjectCodeWithoutTab("WI6");
     writeObjectCode("LAD  gr1, MMINT");
     writeObjectCode("CALL  WRITESTR");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("MMINT    DC  '-32768'", TRUE);
-    writeVarLabel("WRITEBOOL", TRUE);
+    writeObjectCodeWithoutTab("MMINT    DC  '-32768'");
+    writeObjectCodeWithoutTab("WRITEBOOL");
     writeObjectCode("RPUSH");
     writeObjectCode("CPA  gr1, gr0");
     writeObjectCode("JZE  WB1");
     writeObjectCode("LAD  gr1, WBTRUE");
     writeObjectCode("JUMP  WB2");
-    writeVarLabel("WB1", TRUE);
+    writeObjectCodeWithoutTab("WB1");
     writeObjectCode("LAD  gr1, WBFALSE");
-    writeVarLabel("WB2", TRUE);
+    writeObjectCodeWithoutTab("WB2");
     writeObjectCode("CALL  WRITESTR");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("WBTRUE    DC  'TRUE'", TRUE);
-    writeVarLabel("WBFALSE    DC  'FALSE'", TRUE);
-    writeVarLabel("WRITELINE", TRUE);
+    writeObjectCodeWithoutTab("WBTRUE    DC  'TRUE'");
+    writeObjectCodeWithoutTab("WBFALSE    DC  'FALSE'");
+    writeObjectCodeWithoutTab("WRITELINE");
     writeObjectCode("RPUSH");
     writeObjectCode("LD  gr7, OBUFSIZE");
     writeObjectCode("LD  gr6, NEWLINE");
@@ -494,27 +490,27 @@ void writeLibrary() {
     writeObjectCode("ST  gr0, OBUFSIZE");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("FLUSH", TRUE);
+    writeObjectCodeWithoutTab("FLUSH");
     writeObjectCode("RPUSH");
     writeObjectCode("LD gr7, OBUFSIZE");
     writeObjectCode("JZE FL1");
     writeObjectCode("CALL WRITELINE");
-    writeVarLabel("FL1", TRUE);
+    writeObjectCodeWithoutTab("FL1");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("READCHAR", TRUE);
+    writeObjectCodeWithoutTab("READCHAR");
     writeObjectCode("RPUSH");
     writeObjectCode("LD  gr5, RPBBUF");
     writeObjectCode("JZE  RC0");
     writeObjectCode("ST  gr5, 0,gr1");
     writeObjectCode("ST  gr0, RPBBUF");
-    writeVarLabel("RC0", TRUE);
+    writeObjectCodeWithoutTab("RC0");
     writeObjectCode("LD  gr7, INP");
     writeObjectCode("LD  gr6, IBUFSIZE");
     writeObjectCode("JNZ  RC1");
     writeObjectCode("IN  IBUF, IBUFSIZE");
     writeObjectCode("LD  gr7, gr0");
-    writeVarLabel("RC1", TRUE);
+    writeObjectCodeWithoutTab("RC1");
     writeObjectCode("CPA  gr7, IBUFSIZE");
     writeObjectCode("JNZ  RC2");
     writeObjectCode("LD  gr5, NEWLINE");
@@ -522,17 +518,17 @@ void writeLibrary() {
     writeObjectCode("ST  gr0, IBUFSIZE");
     writeObjectCode("ST  gr0, INP");
     writeObjectCode("JUMP  RC3");
-    writeVarLabel("RC2", TRUE);
+    writeObjectCodeWithoutTab("RC2");
     writeObjectCode("LD  gr5, IBUF,gr7");
     writeObjectCode("ADDA  gr7, ONE");
     writeObjectCode("ST  gr5, 0,gr1");
     writeObjectCode("ST  gr7, INP");
-    writeVarLabel("RC3", TRUE);
+    writeObjectCodeWithoutTab("RC3");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("READINT", TRUE);
+    writeObjectCodeWithoutTab("READINT");
     writeObjectCode("RPUSH");
-    writeVarLabel("RI1", TRUE);
+    writeObjectCodeWithoutTab("RI1");
     writeObjectCode("CALL  READCHAR");
     writeObjectCode("LD  gr7, 0,gr1");
     writeObjectCode("CPA  gr7, SPACE");
@@ -547,9 +543,9 @@ void writeLibrary() {
     writeObjectCode("LD  gr5, gr0");
     writeObjectCode("CALL  READCHAR");
     writeObjectCode("LD  gr7, 0,gr1");
-    writeVarLabel("RI4", TRUE);
+    writeObjectCodeWithoutTab("RI4");
     writeObjectCode("LD  gr6, gr0");
-    writeVarLabel("RI2", TRUE);
+    writeObjectCodeWithoutTab("RI2");
     writeObjectCode("CPA  gr7, ZERO");
     writeObjectCode("JMI  RI3");
     writeObjectCode("CPA  gr7, NINE");
@@ -560,22 +556,21 @@ void writeLibrary() {
     writeObjectCode("CALL  READCHAR");
     writeObjectCode("LD  gr7, 0,gr1");
     writeObjectCode("JUMP  RI2");
-    writeVarLabel("RI3", TRUE);
+    writeObjectCodeWithoutTab("RI3");
     writeObjectCode("ST  gr7, RPBBUF");
     writeObjectCode("ST  gr6, 0,gr1");
     writeObjectCode("CPA  gr5, gr0");
     writeObjectCode("JNZ  RI5");
     writeObjectCode("SUBA  gr5, gr6");
     writeObjectCode("ST  gr5, 0,gr1");
-    writeVarLabel("RI5", TRUE);
+    writeObjectCodeWithoutTab("RI5");
     writeObjectCode("RPOP");
     writeObjectCode("RET");
-    writeVarLabel("READLINE", TRUE);
+    writeObjectCodeWithoutTab("READLINE");
     writeObjectCode("ST  gr0, IBUFSIZE");
     writeObjectCode("ST  gr0, INP");
     writeObjectCode("ST  gr0, RPBBUF");
     writeObjectCode("RET");
-
     writeObjectCodeWithoutTab("ONE    DC  1");
     writeObjectCodeWithoutTab("SIX    DC  6");
     writeObjectCodeWithoutTab("TEN    DC  10");
@@ -591,6 +586,7 @@ void writeLibrary() {
     writeObjectCodeWithoutTab("INP    DC  0");
     writeObjectCodeWithoutTab("OBUF    DS  257");
     writeObjectCodeWithoutTab("IBUF    DS  257");
+    writeObjectCodeWithoutTab("RPBBUF    DC  0");
 }
 
 void finalizeCompiler() {
