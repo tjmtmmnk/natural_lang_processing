@@ -10,7 +10,7 @@ L0001
 	LAD	gr1,20
 	CPA	gr2,gr1
 	JPL	EROV
-	LAD	gr1,	$n
+	LAD	gr1,	$n,gr2
 	LD	gr1,0,gr1
 	PUSH	0,gr1
 	LAD	gr1,10
@@ -22,7 +22,7 @@ L0001
 	LAD	gr1,20
 	CPA	gr2,gr1
 	JPL	EROV
-	LAD	gr1,	$n
+	LAD	gr1,	$n,gr2
 	LD	gr1,0,gr1
 	LD	gr2,gr0
 	CALL	WRITEINT

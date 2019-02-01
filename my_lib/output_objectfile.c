@@ -234,9 +234,9 @@ void writeDCLabel() {
 
 static void _writeVarLabel(char *var_name, char *proc_name) {
     if (strcmp(proc_name, "global") == 0) {
-        writeObjectCodeRaw("$%s\r\n", var_name);
+        writeObjectCodeRaw("$%s", var_name);
     } else {
-        writeObjectCodeRaw("$%s%%%s\r\n", var_name, proc_name);
+        writeObjectCodeRaw("$%s%%%s", var_name, proc_name);
     }
 }
 
@@ -249,6 +249,7 @@ void writeArrayVarObjectCode(eScope scope, int is_address_hand, char *name, int 
         writeObjectCode("JPL\tEROV");
         writeObjectCodeRaw("\tLAD\tgr1,\t");
         _writeVarLabel(p->name, p->proc_name);
+        writeObjectCodeRaw(",gr2\r\n");
         if (!is_address_hand) {
             writeObjectCode("LD\tgr1,0,gr1");
         }
@@ -260,6 +261,7 @@ void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name) {
     if (p->is_formal_param) {
         writeObjectCodeRaw("\tLD\tgr1,\t");
         _writeVarLabel(p->name, p->proc_name);
+        writeObjectCodeRaw("\r\n");
         if (!is_address_hand) {
             writeObjectCode("LD\tgr1,0,gr1");
         }
@@ -270,6 +272,7 @@ void writeStandardVarObjectCode(eScope scope, int is_address_hand, char *name) {
             writeObjectCodeRaw("\tLD\tgr1,\t");
         }
         _writeVarLabel(p->name, p->proc_name);
+        writeObjectCodeRaw("\r\n");
     }
 }
 
