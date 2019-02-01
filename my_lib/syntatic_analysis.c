@@ -930,7 +930,6 @@ static int parseVariable() {
         if (parseName() == ERROR) { return ERROR; }
 
         if (token == TLSQPAREN) { //array
-            is_address_hand = FALSE;
             is_array = TRUE;
             int array_size = 0;
 

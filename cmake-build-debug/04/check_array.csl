@@ -11,7 +11,6 @@ L0001
 	CPA	gr2,gr1
 	JPL	EROV
 	LAD	gr1,	$n,gr2
-	LD	gr1,0,gr1
 	PUSH	0,gr1
 	LAD	gr1,10
 	POP	gr2
