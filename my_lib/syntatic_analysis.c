@@ -386,7 +386,6 @@ static int parseConditionState() {
     if ((type = parseExpression()) == ERROR) { return ERROR; }
     if (type != TPBOOL) { return errorWithReturn(getLineNum(), "must be boolean"); }
 
-    writeObjectCode("POP\tgr1");
     writeObjectCode("CPA\tgr1,gr0");
     writeObjectCodeRaw("\tJZE\t");
     writeJumpLabel(getIncLabel());

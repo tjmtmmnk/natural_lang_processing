@@ -307,8 +307,7 @@ void writeFactorObjectCode(int token, int number, int exp_type, char *str) {
             break;
         case TCHAR:
             if (exp_type == TPINT) {
-                writeObjectCode("POP\tgr2");
-                writeObjectCode("LAD\tgr1,127"); // 0b01111111
+                writeObjectCode("LAD\tgr2,127"); // 0b01111111
                 writeObjectCode("AND\tgr1,gr2");
             }
             break;
